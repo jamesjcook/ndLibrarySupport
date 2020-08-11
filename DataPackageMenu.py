@@ -1,53 +1,34 @@
 ## Class for a dropdown menu that lists all the data packages available for an atlas
-## To run in Slicer, type: execfile("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\DataPackageMenu.py")
 ## Author: Austin Kao
 
-#class DataPackageMenu(qt.QMenu):
 class DataPackageMenu(qt.QMenu):
-    '''
-    ## Function to update GUI elements with a selected ndLibrary
-    ## GUI elements should be able to use volumes for the added library
-    def loadLibrary(self, index):
-        name = self.itemText(index)
-        #print("Hey this is working")
-        #print(name)
-        lib = self.packageDict[name]
-        self.controller.setUpLibrary(lib)
-    '''
+    ## ndLibraries is the list of ndLibraries to be displayed in the data package menu
+    ## Places menu in the top menu bar (With File, Edit, etc.)
     def __init__(self, ndLibraries):
         if not isinstance(ndLibraries, list):
             print("Not a list")
             return
-        #super(qt.QComboBox, self).__init__()
         super(qt.QMenu, self).__init__()
-        print("Trying to create menu")
         mainWindow = slicer.app.activeWindow()
         mainMenuBar = mainWindow.findChild("QMenuBar", "menubar")
         mainMenuBar.addMenu(self)
         self.title = "Data Packages"
         for toolbar in mainWindow.findChildren("QToolBar"):
             toolbar.setVisible(0)
-        #menuLabel = qt.QLabel("Data packages:")
-        #newToolBar = qt.QToolBar()
-        #mainWindow.addToolBar(newToolBar)
-        #newToolBar.addWidget(menuLabel)
-        #newToolBar.addWidget(self)
-        self.controller = AtlasController(ndLibraries)
-        #self.packageDict = dict()
+        ## Instantiate the controller of the ndLibraryViewer
+        self.controller = AtlasController()
+        ## Create the items in the menu and attach functions to each one
         for lib in ndLibraries:
             if not isinstance(lib, ndLibrary):
                 continue
             name = lib.file_loc
-            #if lib.fields.has_key("Strain") and lib.fields.has_key("LibName"):
             if "Strain" in lib.fields and "LibName" in lib.fields:
                 name = lib.fields["Strain"] + " " + lib.fields["LibName"]
             elif "LibName" in lib.fields:
                 name = lib.fields["LibName"]
-            #self.packageDict[name] = lib
-            #self.addItem(name)
             menuItem = qt.QAction(name, self)
             self.addAction(menuItem)
+            ## Define a function for the menu item to execute when selected
             def loadRelevantLibrary():
                 self.controller.setUpLibrary(lib)
             menuItem.triggered.connect(loadRelevantLibrary)
-        #self.activated.connect(self.loadLibrary)

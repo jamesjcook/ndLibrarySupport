@@ -1,13 +1,11 @@
 ## Angle slider
-## To run, type: execfile("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\AngleSlider.py")
 ## Author: Austin Kao
 
-## Method that will rotate the node by the amount specified by the slider
-## Makes use of the LR slider in the Reformat module to set rotation
-## Copies coordinates so that Compare1 and Compare2 nodes will share the same rotation transformation
-## TODO: fix bug where suspected rounding error will not calibrate position correctly
-
 class AngleSlider(slicer.qMRMLLinearTransformSlider):
+    ## tag is the tag of the slice node where the angle slider will be in
+    ## comp1 is the tag of the first slice node to be rotated
+    ## comp2 is the tag of the second slice node to be rotated
+    ## Rotates between -200 and 200 degrees in the LR directions
     def __init__(self, tag, comp1, comp2):
         super(slicer.qMRMLLinearTransformSlider, self).__init__()
         qtLayout = slicer.app.layoutManager().sliceWidget(tag).layout()
@@ -24,7 +22,9 @@ class AngleSlider(slicer.qMRMLLinearTransformSlider):
         self.nodeSelector = widget.findChild("qMRMLNodeComboBox")
         self.comp1 = "vtkMRMLSliceNode" + comp1
         self.comp2 = "vtkMRMLSliceNode" + comp2
-        
+    ## Method that will rotate the node by the amount specified by the slider
+    ## Makes use of the coordinate widget in the Reformat module to set rotation
+    ## Sets Compare1 and Compare2 nodes to the same coordinates so the same transformation will be observed
     def rotateNode(self, num):
         self.nodeSelector.setCurrentNodeID(self.comp1)
         y = 1

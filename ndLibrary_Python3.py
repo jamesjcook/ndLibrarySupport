@@ -1,13 +1,10 @@
 ## Class for a library of data
-## To run in Slicer, type: exec(open("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\ndLibrary.py").read())
-## Example to test: f = ndLibrary(None, r"D:\Libraries\000ExternalAtlasesBySpecies\Human")
-## Modified to account for certain changes in Python 3
 ## NOTE: Assumes files are in a Windows system
 ## Author: Austin Kao
 import os
 import re
 
-class ndLibrary:
+class ndLibrary:        
     ## Constructor for a ndLibrary
     ## parent: The parent ndLibrary
     ## file_loc: The full file path that the ndLibrary resides in
@@ -25,7 +22,7 @@ class ndLibrary:
         if not os.path.isfile(os.path.join(file_loc, self.conf_file_name)):
             #print("No lib.conf file present")
             return
-        if isinstance(parent, ndLibrary):
+        if isinstance(parent, type(self)):
             self.fields = dict(parent.fields)
         elif parent is None:
             self.fields = dict()
@@ -37,7 +34,6 @@ class ndLibrary:
         self.file_loc = file_loc
         self.children = list()
         self.is_leaf = False
-        self.relevantStrainLib = False
         self.volDict = None
         self.recursion_field = "RecursiveLoad"
         self.path_field = "Path"
@@ -48,14 +44,12 @@ class ndLibrary:
         self.labelVolume = None
         self.colorTable = None
         self.trackTransform = None
-        #if self.fields.has_key(self.pattern_field):
+        self.relevantStrainLib = False
         if self.pattern_field in self.fields:
             del self.fields[self.pattern_field]
-        #if self.fields.has_key(self.match_field):
         if self.match_field in self.fields:
             del self.fields[self.match_field]
         ## Have ndLibrary automatically build the ndLibrary tree if it is a root?
-        #print(self.fields)
         self.extensionPriority = list({"nhdr", "nrrd", "nii.gz", "nii", "png", "tif", "jpg", "gif", "bmp"})
         if parent == None:
             self.loadEntire()
@@ -69,10 +63,8 @@ class ndLibrary:
             return
         line = conf.readline()
         while line is not "":
-            #print(line)
             is_comment = False
             components = line.split("=")
-            #print(components)
             if line[0] == "#":
                 #print("Comment encountered")
                 is_comment = True
@@ -84,14 +76,11 @@ class ndLibrary:
     
     ## Method to find and make child ndLibraries
     def buildChildren(self):
-        #if self.fields.has_key(self.recursion_field) and self.fields[self.recursion_field] == "false":
         if self.recursion_field in self.fields and self.fields[self.recursion_field] == "false":
             #print("Reached leaf of tree. No children")
             is_leaf = True
             return
         os.chdir(self.file_loc)
-        #if (self.fields.has_key(self.recursion_field) and self.fields[self.recursion_field] == "true"
-        #    and self.fields.has_key(self.path_field) and os.path.isdir(self.fields[self.path_field])):
         if (self.recursion_field in self.fields and self.fields[self.recursion_field] == "true"
             and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
                 #print("Going on another path: {}".format(self.fields[self.path_field]))
@@ -126,9 +115,10 @@ class ndLibrary:
     def determineRelevance(self):
         if "TestingLib" in self.fields and self.fields["TestingLib"] == "true":
             self.relevantStrainLib = False
-        elif ("Category" in self.fields and self.fields["Category"] == "Species"
-            and "Strain" in self.fields):
+        elif "Category" in self.fields and self.fields["Category"] == "Species":
+            #and "Strain" in self.fields):
             self.relevantStrainLib = True
+        #print("{} is {}".format(self.file_loc, self.relevantStrainLib))
     
     ## Function to change the working directory according to the path specfied in a lib.conf file
     ## By default, the function will change the working directory to the ndLibrary's directory
@@ -148,7 +138,7 @@ class ndLibrary:
     ## See get_volume_node method for more details
     def loadVolumes(self):
         if self.volDict is not None:
-            print("Volumes are already loaded")
+            #print("Volumes are already loaded")
             return
         #if self.fields.has_key(self.pattern_field):
         if self.pattern_field in self.fields:
@@ -170,7 +160,8 @@ class ndLibrary:
         self.volDict = dict()
         for i in range(0, len(volumes)):
             volPath = os.path.join(os.getcwd(), volumes[i])
-            if os.path.isdir(volPath) or "label" in volumes[i] or not volumes[i].split(".", 1)[-1] == "nii.gz":
+            extension = volumes[i].split(".", 1)[-1]
+            if os.path.isdir(volPath) or "label" in volumes[i] or not extension in self.extensionPriority:
                 continue
             fileName = volumes[i].split(".")[0]
             fileName = fileName.lower()
@@ -210,6 +201,7 @@ class ndLibrary:
                     break
         else:
             self.volDict[key] = (volPath, None)
+    
     ## Loads in the label volume file for a particular specimen
     ## Loads the lookup table for the different regions of the brain
     ## No lookup table in example directory, for now is hard coded to go to a specific file in a specific directory
@@ -249,10 +241,9 @@ class ndLibrary:
         txt = open(clts[0])
         #print("Found color lookup table")
         self.labelDict = dict()
-        #[loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
         colorTable = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]))
-        #print(result)
-        self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
+        if colorTable is not None:
+            self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
         ## Count parameter is the number a node will be when ordered ascendingly
         ## i.e. node 0 is still 0, but node 1001 becomes 167, 1002 becomes 168, etc.
         ## Useful for InteractiveLabelSelector
@@ -260,7 +251,10 @@ class ndLibrary:
         for line in txt:
             words = line.split(' ')
             if words[0] is not "#" and len(words) > 4:
-                self.labelDict[int(words[0])] = (words[1],words[2],words[3],words[4], count)
+                try:
+                    self.labelDict[int(words[0])] = (words[1],words[2],words[3],words[4], count)
+                except ValueError:
+                    pass
                 count += 1
         parent_lib = self.parent
         #print("Found valid labels in {}".format(self.file_loc))
@@ -279,27 +273,32 @@ class ndLibrary:
             #print("No path to follow for origin transform")
             return
         if self.trackTransform is not None:
-            print("Track transform is already loaded")
+            #print("Track transform is already loaded")
             return
         self.jumpToDir()
         originPath = self.fields["OriginTransform"].replace("/","\\")
         if os.path.isfile(originPath):
             self.trackTransform = (os.path.join(os.getcwd(), originPath), None)
     
+    ## Returns the origin transform for a given volume
+    ## Loads the transform into Slicer if it has not been loaded yet
     def getTrackTransform(self):
         if self.trackTransform is not None:
             if self.trackTransform[1] is None:
-                #[loadSuccess, transformNode]=slicer.util.loadTransform(self.trackTransform[0], True)
                 transformNode = slicer.util.loadTransform(self.trackTransform[0])
-                self.trackTransform = (self.trackTransform[0], transformNode)
+                if transformNode is not None:
+                    self.trackTransform = (self.trackTransform[0], transformNode)
             return self.trackTransform[1]
         return None
     
+    ## Returns the volDict for an ndLibrary
     def get_volume_dict(self):
         if isinstance(self.volDict, ndLibrary):
             return self.volDict.get_volume_dict()
         return self.volDict
     
+    ## Returns a volume given the type of volume wanted (i.e. fa, dwi)
+    ## Loads the volume into Slicer if it has not been loaded yet
     def get_volume_node(self, key):
         if self.volDict is None:
             for child in self.children:
@@ -307,29 +306,29 @@ class ndLibrary:
                 if volNode is not None:
                     return volNode
             return None
-        #if not self.volDict.has_key(key):
         if not key in self.volDict:
             print("Invalid key")
             return
         volNode = self.volDict[key][1]
         if volNode is None:
-            #[LoadSuccess, volNode]=slicer.util.loadVolume(self.volDict[key][0],{'show':False},True)
-            volNode = slicer.util.loadVolume(self.volDict[key][0],{'show':False})            
-            self.volDict[key] = (self.volDict[key][0], volNode)
-            trackTransform = self.getTrackTransform()
-            if trackTransform is not None:
-                volNode.SetAndObserveTransformNodeID(trackTransform.GetID())
+            volNode = slicer.util.loadVolume(self.volDict[key][0],{'show':False})
+            if volNode is not None:
+                self.volDict[key] = (self.volDict[key][0], volNode)
+                trackTransform = self.getTrackTransform()
+                if trackTransform is not None:
+                    volNode.SetAndObserveTransformNodeID(trackTransform.GetID())
         return volNode
-        
+    
+    ## Returns the name of a labeled region given a region number read from the color lookup table
     def getRegionLabel(self, num):
         if isinstance(self.labelDict, ndLibrary):
-            return self.labelDict.getRegionLabel(num)   
-        #if not self.labelDict.has_key(num):
+            return self.labelDict.getRegionLabel(num)
         if not num in self.labelDict:
             print("Invalid region number")
             return
         return self.labelDict[num][0]
     
+    ## Toggles the label volume on or off given the value of show
     def toggleLabelVolume(self, show):
         compNodes = slicer.app.mrmlScene().GetNodesByClass("vtkMRMLSliceCompositeNode")
         if show == True and self.getLabelVolume() is not None:
@@ -339,18 +338,22 @@ class ndLibrary:
             for node in compNodes:
                 node.SetReferenceLabelVolumeID("None")
     
+    ## Returns the color table node associated with the ndLibrary
     def getColorTableNode(self):
         if isinstance(self.colorTable, ndLibrary):
             return self.colorTable.getColorTableNode()
         if self.colorTable is not None:
             return self.colorTable[1]
         return None
-        
+    
+    ## Returns the labelDict associated with the ndLibrary
     def getLabelDict(self):
         if isinstance(self.labelDict, ndLibrary):
             return self.labelDict.getLabelDict()
         return self.labelDict
-        
+    
+    ## Returns the label volume associated with the ndLibrary
+    ## Loads the label volume into Slicer if not loaded yet
     def getLabelVolume(self):
         if isinstance(self.labelVolume, ndLibrary):
             #print("Going to {}".format(self.labelVolume.file_loc))
@@ -359,25 +362,28 @@ class ndLibrary:
             return None
         if self.labelVolume[1] is None:
             #print(self.labelVolume[0])
-            #[loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
             labelVolumeNode = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False})
             #print(type(self.labelVolume))
-            self.labelVolume = (self.labelVolume[0], labelVolumeNode)
-            labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
-            labelVolumeNode.GetDisplayNode().SetAndObserveColorNodeID(self.getColorTableNode().GetID())
-            trackTransform = self.getTrackTransform()
-            if trackTransform is not None:
-                labelVolumeNode.SetAndObserveTransformNodeID(trackTransform.GetID())
+            if labelVolumeNode is not None:
+                self.labelVolume = (self.labelVolume[0], labelVolumeNode)
+                labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
+                labelVolumeNode.GetDisplayNode().SetAndObserveColorNodeID(self.getColorTableNode().GetID())
+                trackTransform = self.getTrackTransform()
+                if trackTransform is not None:
+                    labelVolumeNode.SetAndObserveTransformNodeID(trackTransform.GetID())
         return self.labelVolume[1]
         
+    ## From the region number of a label, get the row number for the table of label colors (Found in Colors module)
+    ## Mostly used for InteractiveLabelSelector
     def getRowNum(self, roiNum):
         if isinstance(self.labelDict, ndLibrary):
             return self.labelDict.getRowNum(roiNum)
-        #if self.labelDict.has_key(roiNum):
         if roiNum in self.labelDict:
             return self.labelDict[roiNum][4]
         return None
     
+    ## From the row number of the table of label colors, find the associated region number of a label
+    ## Mostly used for InteractiveLabelSelector
     def getRegionNum(self, countNum):
         if isinstance(self.labelDict, ndLibrary):
             return self.labelDict.getRegionNum(countNum)
@@ -388,13 +394,15 @@ class ndLibrary:
                 return key
         return None
     
+    ## Meant to tell whether or not ndLibrary object is initialized properly
     def isValid(self):
         return self.valid
     
-    ## Meant to tell whether or not current ndLibrary is relevant enough to be used in atlas
+    ## Meant to tell whether or not current ndLibrary is the root ndLibrary for a relevant strain
     def isRelevantStrainLibrary(self):
         return self.relevantStrainLib
     
+    ## Returns a list of relevant strains meant to be options for the DataPackageMenu
     def getRelevantStrainList(self):
         if self.isRelevantStrainLibrary():
             return [self]

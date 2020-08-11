@@ -1,28 +1,24 @@
-## Class for the external loading of a desired volume file
+## Class for the external loading of a desired volume file not present in the atlas files
 ## Author: Austin Kao
 
 ## Tinkering: connect to slicer.app.coreIOManager().newFileLoaded signal
-## File is already loaded though...
+## File is already loaded when signal is emitted though...
 '''
 def test(properties):
     print("Properties are")
     print(properties)
     properties['show'] = False
     print(properties)
-
-def test1():
-    print("hi")
-
-def test2(string):
-    print(string)
 '''
 
 class ExternalLoadButton(qt.QPushButton):
+    ## nodeTag is the tag of the node the button is placed in
     def __init__(self, nodeTag):
-        self.button = qt.QPushButton("Load External Volume")
-        self.button.released.connect(self.loadExternalVolume)
+        super(qt.QPushButton, self).__init__()
+        self.text = "Load External Volume"
+        self.released.connect(self.loadExternalVolume)
         self.nodeTag = nodeTag
-        slicer.app.layoutManager().sliceWidget(nodeTag).layout().addWidget(self.button)
+        slicer.app.layoutManager().sliceWidget(nodeTag).layout().addWidget(self)
     
     ## Function to load an external volume that the user chooses
     ## Currently lets user load in nodes like normal, then sets the scene so that loaded volume appears only
@@ -34,6 +30,8 @@ class ExternalLoadButton(qt.QPushButton):
         for node in compNodes:
             if node.GetID() != externalLoadID:
                 volumes[node] = (node.GetBackgroundVolumeID(), node.GetForegroundVolumeID(), node.GetLabelVolumeID())
+        ## openAddDataDialog() method does not return until user chooses to load something or not
+        ## Create new method to open a file dialog that behaves as expected?
         result = slicer.app.coreIOManager().openAddDataDialog()
         if result == False:
             return

@@ -1,6 +1,5 @@
 ## Class for a volume selection dropdown menu for the 2D Atlas
-## Based on code from Dropdowns.py
-## To run, type: execfile("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\VolumeDropdown.py")
+## Based on code from Dropdowns.py for FiberCompareView
 ## Author: Austin Kao
 
 class volumeDropdown(qt.QComboBox):
@@ -24,9 +23,9 @@ class volumeDropdown(qt.QComboBox):
             self.setupLibrary(library)
     
     ## Function that will change the volume image being looked at
-    ## Because of how the dropdown menu, any entry in volDict should at least have a file path
+    ## Because of how the dropdown menu is set up, any entry in volDict should at least have a file path
     ## The corresponding volume may or may not be loaded
-    ## If loaded, function will set the 
+    ## If loaded, function will set the loaded volume into the associated slice node
     ## Function will load the requested volume and add it to volDict
     def changeVolume(self, index):
         name = self.itemText(index)

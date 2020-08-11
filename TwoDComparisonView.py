@@ -1,8 +1,8 @@
-## Layout specifications for 2D Atlas
+## Layout specifications for ndLibraryViewer
 ## Based on code originally written by Alex Sheu
-## To run, type: execfile("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\TwoDComparisonView.py")
 ## Modified by Austin Kao
 
+## Function that creates the TwoDComparisonView layout and sets it
 def setTwoDComparisonView():
     customLayout = ("<layout type=\"vertical\">"
       " <item>"
@@ -50,10 +50,12 @@ def setTwoDComparisonView():
     layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
     layoutManager.setLayout(586)
 
+## Function that links Compare1 and Compare2 slice view nodes
 def setSliceNodeLinks(value):
     slicer.util.getNode("vtkMRMLSliceCompositeNodeCompare1").SetLinkedControl(value)
     slicer.util.getNode("vtkMRMLSliceCompositeNodeCompare2").SetLinkedControl(value)
 
+## Function that sets label outline (See the outline of label instead of solid color)
 def setLabelOutlineAtlas(num):
     slicer.util.getNode("vtkMRMLSliceNodeNav").SetUseLabelOutline(num)
     slicer.util.getNode("vtkMRMLSliceNodeCompare1").SetUseLabelOutline(num)

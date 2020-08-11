@@ -1,14 +1,14 @@
 ## For the functions of the 2D atlas that allow you to click on regions of the brain
 ## and toggle a label outline over that region
-## To run in Slicer, type: execfile("D:\CIVM_Apps\Slicer\FiberCompareView\\2D_Atlas\\InteractiveLabelSelector.py")
 ## Author: Austin Kao
 
 class InteractiveLabelSelector:
     ## library specifies the ndLibrary the InteractiveLabelSelector is supposed to manage labels for
     ## nodeTag is the tag of the slice node that the push buttons are supposed to reside in
-    ## Use the colors module in 3D Slicer to toggle the opacity of a specific label
+    ## Use the Colors module in 3D Slicer to toggle the opacity of a specific label
     ## allPushButton is a button that will make all relevant labels visible
     ## nonePushButton is a button that will make all relevant labels invisible
+    ## Adds a "Visible" column to the table of colors found in the Colors module
     def __init__(self, library, nodeTag):
         if not isinstance(nodeTag, str):
             print("Tag is not a string")
@@ -39,13 +39,15 @@ class InteractiveLabelSelector:
         if library is not None:
             self.setupLibrary(library)
     
+    ## Sets the "Hide colors" check box found just above the table of colors
+    ## "Hide colors", when checked, hides any unused colors in the table of colors
     def setHideColorsCheckState(self, value):
         widget = slicer.modules.colors.widgetRepresentation()
         clt_display = widget.findChild("ctkCollapsibleButton", "DisplayCollapsibleButton")
         hideColors = clt_display.findChild("QCheckBox")
         hideColors.setCheckState(value)
     
-    ## Function to replace the the set up the current active ndLibrary of an InteractiveLabelSelector
+    ## Function to set the current active ndLibrary of an InteractiveLabelSelector
     def setupLibrary(self, library):
         if not isinstance(library, ndLibrary):
             print("Invalid library used")
@@ -96,7 +98,8 @@ class InteractiveLabelSelector:
                     self.tableView.model().setData(index, 'Yes')
         for node in compNodes:
             node.SetReferenceLabelVolumeID(idDict[node])
-
+    
+    ## Function that toggles the color of a label for a selected row in the table of colors
     def processTableViewClick(self, index):
         roiNum = index.row()
         self.toggleColor(roiNum)
