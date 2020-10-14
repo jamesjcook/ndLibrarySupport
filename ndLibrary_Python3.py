@@ -140,7 +140,6 @@ class ndLibrary:
         if self.volDict is not None:
             #print("Volumes are already loaded")
             return
-        #if self.fields.has_key(self.pattern_field):
         if self.pattern_field in self.fields:
             filePat = self.fields[self.pattern_field]
         else:
@@ -165,7 +164,6 @@ class ndLibrary:
                 continue
             fileName = volumes[i].split(".")[0]
             fileName = fileName.lower()
-            #if self.fields.has_key("FileAbrevPattern"):
             if self.filter_field in self.fields:
                 pattern = self.fields[self.filter_field]
                 pattern = pattern.replace("||","|") #Possible mistake with regex? Regex matching doesn't work as expected otherwise
@@ -241,9 +239,11 @@ class ndLibrary:
         txt = open(clts[0])
         #print("Found color lookup table")
         self.labelDict = dict()
-        colorTable = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]))
-        if colorTable is not None:
-            self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
+        [loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
+        if loadSuccess == 0:
+            print("Could not load color lookup table. File: {}".format(clts[0]))
+            return
+        self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
         ## Count parameter is the number a node will be when ordered ascendingly
         ## i.e. node 0 is still 0, but node 1001 becomes 167, 1002 becomes 168, etc.
         ## Useful for InteractiveLabelSelector
@@ -285,8 +285,10 @@ class ndLibrary:
     def getTrackTransform(self):
         if self.trackTransform is not None:
             if self.trackTransform[1] is None:
-                transformNode = slicer.util.loadTransform(self.trackTransform[0])
-                if transformNode is not None:
+                [loadSuccess, transformNode]=slicer.util.loadTransform(self.trackTransform[0], True)
+                if loadSuccess == 0:
+                    print("Failed to load transform:"+self.trackTransform[0])
+                else:
                     self.trackTransform = (self.trackTransform[0], transformNode)
             return self.trackTransform[1]
         return None
@@ -311,8 +313,11 @@ class ndLibrary:
             return
         volNode = self.volDict[key][1]
         if volNode is None:
-            volNode = slicer.util.loadVolume(self.volDict[key][0],{'show':False})
-            if volNode is not None:
+            [LoadSuccess, volNode]=slicer.util.loadVolume(self.volDict[key][0],{'show':False},True)
+            if LoadSuccess==0:
+                print("Error loading volume")
+                return None
+            else:
                 self.volDict[key] = (self.volDict[key][0], volNode)
                 trackTransform = self.getTrackTransform()
                 if trackTransform is not None:
@@ -362,9 +367,12 @@ class ndLibrary:
             return None
         if self.labelVolume[1] is None:
             #print(self.labelVolume[0])
-            labelVolumeNode = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False})
+            [loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
             #print(type(self.labelVolume))
-            if labelVolumeNode is not None:
+            if loadSuccess == 0:
+                print("Failed to load labelVolume")
+                return None
+            else:
                 self.labelVolume = (self.labelVolume[0], labelVolumeNode)
                 labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
                 labelVolumeNode.GetDisplayNode().SetAndObserveColorNodeID(self.getColorTableNode().GetID())
