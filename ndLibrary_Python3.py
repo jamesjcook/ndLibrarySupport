@@ -7,7 +7,7 @@ import re
 class ndLibrary:        
     ## Constructor for a ndLibrary
     ## parent: The parent ndLibrary
-    ## file_loc: The full file path that the ndLibrary resides in
+    ## file_loc: The full path of the ndLibrary
     ## fields: A dictionary populated with name-value pairs found in lib.conf
     ## recursion_field: String used to identify uses of recursion
     ## conf_file_name: String that stores the default name of a conf file (lib.conf)
@@ -15,6 +15,7 @@ class ndLibrary:
     ## valid: A field that tells if an ndLibrary object is valid for use (Needs to pass the initial checks)
     def __init__(self, parent, file_loc):
         self.valid = False
+        # TODO: support libs as files as well as dir
         if not os.path.isdir(file_loc):
             print('Not a directory')
             return
@@ -33,8 +34,13 @@ class ndLibrary:
         self.parent = parent
         self.file_loc = file_loc
         self.children = list()
+        # TODO: replace is_leaf with function checking child count
         self.is_leaf = False
+        # TODO: instead of volDict, add "node" field to definition, and the children will be ndLib nodes all the way down to the independent volumes, we'll update path as well to be the "fully-resolved" path to file.
         self.volDict = None
+        # TODO: adjust all the special field handlers to be simply read from the field.
+        #       Perhaps they should be accessors? 
+        #       Or we should craft a special operator to get access to fields?
         self.recursion_field = "RecursiveLoad"
         self.path_field = "Path"
         self.match_field = "FileAbrevMatch"
@@ -43,7 +49,7 @@ class ndLibrary:
         self.labelDict = None
         self.labelVolume = None
         self.colorTable = None
-        self.trackTransform = None
+        self.originTransform = None
         self.relevantStrainLib = False
         if self.pattern_field in self.fields:
             del self.fields[self.pattern_field]
@@ -85,10 +91,10 @@ class ndLibrary:
             and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
                 #print("Going on another path: {}".format(self.fields[self.path_field]))
                 os.chdir(self.fields[self.path_field])
-        for directory in os.listdir(os.getcwd()):
-            #print(os.path.join(self.file_loc, directory))
-            if os.path.isdir(os.path.join(os.getcwd(), directory)):
-                child_lib = ndLibrary(self, os.path.join(os.getcwd(), directory))
+        for entry in os.listdir(os.getcwd()):
+            #print(os.path.join(self.file_loc, entry))
+            if os.path.isdir(os.path.join(os.getcwd(), entry)):
+                child_lib = ndLibrary(self, os.path.join(os.getcwd(), entry))
                 if child_lib.isValid():
                     self.children.append(child_lib)
         if len(self.children) == 0:
@@ -100,9 +106,11 @@ class ndLibrary:
         if self.file_loc is not None and os.path.isfile(os.path.join(self.file_loc, self.conf_file_name)):
             self.loadConf(os.path.join(self.file_loc, self.conf_file_name))
             self.determineRelevance()
+            if not self.valid:
+                return
             self.loadVolumes()
             self.loadLabels()
-            self.loadTrackTransform()
+            self.loadoriginTransform()
             self.buildChildren()
             for child in self.children:
                 child.loadEntire()
@@ -115,6 +123,7 @@ class ndLibrary:
     def determineRelevance(self):
         if "TestingLib" in self.fields and self.fields["TestingLib"] == "true":
             self.relevantStrainLib = False
+            self.valid = False
         elif "Category" in self.fields and self.fields["Category"] == "Species":
             #and "Strain" in self.fields):
             self.relevantStrainLib = True
@@ -239,8 +248,16 @@ class ndLibrary:
         txt = open(clts[0])
         #print("Found color lookup table")
         self.labelDict = dict()
-        [loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
-        if loadSuccess == 0:
+        if not '2.7' in sys.version:
+            # slicer py3 call, nightlies, and future next release
+            # confusingly look for py2.7 becuase that is not likley to change.
+            colorTable = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]))
+        else:
+            #slicer py2 call, latest 4.10.2 release
+            [loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
+            if not loadSuccess:
+                colorTable = None
+        if colorTable is None:
             print("Could not load color lookup table. File: {}".format(clts[0]))
             return
         self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
@@ -265,32 +282,32 @@ class ndLibrary:
             parent_lib = parent_lib.parent
     
     ## Function that loads the transform for the volume node
-    ## trackTransform is a tuple with two elements
+    ## originTransform is a tuple with two elements
     ## Element 0 is the file path for the transform
     ## Element 1 is the transform node in 3D Slicer
-    def loadTrackTransform(self):
+    def loadoriginTransform(self):
         if not "OriginTransform" in self.fields:
             #print("No path to follow for origin transform")
             return
-        if self.trackTransform is not None:
+        if self.originTransform is not None:
             #print("Track transform is already loaded")
             return
         self.jumpToDir()
         originPath = self.fields["OriginTransform"].replace("/","\\")
         if os.path.isfile(originPath):
-            self.trackTransform = (os.path.join(os.getcwd(), originPath), None)
+            self.originTransform = (os.path.join(os.getcwd(), originPath), None)
     
     ## Returns the origin transform for a given volume
     ## Loads the transform into Slicer if it has not been loaded yet
-    def getTrackTransform(self):
-        if self.trackTransform is not None:
-            if self.trackTransform[1] is None:
-                [loadSuccess, transformNode]=slicer.util.loadTransform(self.trackTransform[0], True)
+    def getOriginTransform(self):
+        if self.originTransform is not None:
+            if self.originTransform[1] is None:
+                [loadSuccess, transformNode]=slicer.util.loadTransform(self.originTransform[0], True)
                 if loadSuccess == 0:
-                    print("Failed to load transform:"+self.trackTransform[0])
+                    print("Failed to load transform:"+self.originTransform[0])
                 else:
-                    self.trackTransform = (self.trackTransform[0], transformNode)
-            return self.trackTransform[1]
+                    self.originTransform = (self.originTransform[0], transformNode)
+            return self.originTransform[1]
         return None
     
     ## Returns the volDict for an ndLibrary
@@ -319,9 +336,9 @@ class ndLibrary:
                 return None
             else:
                 self.volDict[key] = (self.volDict[key][0], volNode)
-                trackTransform = self.getTrackTransform()
-                if trackTransform is not None:
-                    volNode.SetAndObserveTransformNodeID(trackTransform.GetID())
+                originTransform = self.getOriginTransform()
+                if originTransform is not None:
+                    volNode.SetAndObserveTransformNodeID(originTransform.GetID())
         return volNode
     
     ## Returns the name of a labeled region given a region number read from the color lookup table
@@ -366,19 +383,27 @@ class ndLibrary:
         if self.labelVolume == None:
             return None
         if self.labelVolume[1] is None:
-            #print(self.labelVolume[0])
-            [loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
-            #print(type(self.labelVolume))
-            if loadSuccess == 0:
-                print("Failed to load labelVolume")
-                return None
+            if not '2.7' in sys.version:
+                # slicer py3 call, nightlies, and future next release
+                # confusingly look for py2.7 becuase that is not likley to change.
+                labelVolumeNode = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False})
             else:
+                #slicer py2 call, latest 4.10.2 release
+                [loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
+                if not loadSuccess:
+                    labelVolumeNode = None
+            #print(self.labelVolume[0])
+            #print(type(self.labelVolume))
+            if labelVolumeNode is not None:
                 self.labelVolume = (self.labelVolume[0], labelVolumeNode)
                 labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
                 labelVolumeNode.GetDisplayNode().SetAndObserveColorNodeID(self.getColorTableNode().GetID())
-                trackTransform = self.getTrackTransform()
-                if trackTransform is not None:
-                    labelVolumeNode.SetAndObserveTransformNodeID(trackTransform.GetID())
+                originTransform = self.getOriginTransform()
+                if originTransform is not None:
+                    labelVolumeNode.SetAndObserveTransformNodeID(originTransform.GetID())
+            else:
+                print("Failed to load labelVolume")
+                return None
         return self.labelVolume[1]
         
     ## From the region number of a label, get the row number for the table of label colors (Found in Colors module)
