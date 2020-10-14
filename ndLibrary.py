@@ -140,7 +140,6 @@ class ndLibrary:
         if self.volDict is not None:
             #print("Volumes are already loaded")
             return
-        #if self.fields.has_key(self.pattern_field):
         if self.pattern_field in self.fields:
             filePat = self.fields[self.pattern_field]
         else:
@@ -165,7 +164,6 @@ class ndLibrary:
                 continue
             fileName = volumes[i].split(".")[0]
             fileName = fileName.lower()
-            #if self.fields.has_key("FileAbrevPattern"):
             if self.filter_field in self.fields:
                 pattern = self.fields[self.filter_field]
                 pattern = pattern.replace("||","|") #Possible mistake with regex? Regex matching doesn't work as expected otherwise
