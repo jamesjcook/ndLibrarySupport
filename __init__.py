@@ -26,7 +26,7 @@ print("setup code from "+codePath)
 for file in os.listdir(codePath):
     if '__init__' in file:
         continue
-    if os.path.isdir(os.path.join(codePath, file)):
+    if os.path.isdir(os.path.join(codePath, file)) or not re.match(r''+r".*[.]py$", file):
         continue
     #print("exec(open(r\""+os.path.join(codePath, file)+"\").read())")
     try:
