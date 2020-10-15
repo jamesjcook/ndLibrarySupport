@@ -11,4 +11,4 @@ class manager:
         ## Create the menu of data packages to be used in the ndLibraryViewer
         ## DataPackageMenu will instantiate a controller object that will create the other GUI elements
         self.menu = DataPackageMenu(self.library.getRelevantStrainList())
-        slicer.util.messageBox("Click Data Packages menu to begin")
+        slicer.util.messageBox("Click "+self.menu.title+" menu to begin")
