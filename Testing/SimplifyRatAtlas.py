@@ -1,12 +1,8 @@
 
 # this code assumes you've already loaded the main code.
-# py3
-#    exec(open(codePath+"/Testing/SimplifyRatAtlas.py").read())
-# py2
-#    execfile(codePath+"/Testing/SimplifyRatAtlas.py")
 #codePath
 # load the transfer function
-if not '2.7' in sys.version:
+if (sys.version_info > (3, 0)):
   exec(open(ndLibrarySupport.codePath+"/Testing/Move_Atlas_Script.py").read())
 else:
   execfile(ndLibrarySupport.codePath+"/Testing/Move_Atlas_Script.py")
