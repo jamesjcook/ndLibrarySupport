@@ -36,10 +36,12 @@ class AtlasController(): ## Rename?
         ## Hides Python Interactor, module panel
         ## Makes slice intersections visible
         ## May be better to move this code outside the controller?
-        window = slicer.util.mainWindow()
-        pythonWidget = window.findChild("QDockWidget", "PythonConsoleDockWidget")
+        mainWindow = slicer.util.mainWindow()
+        for toolbar in mainWindow.findChildren("QToolBar"):
+            toolbar.setVisible(0)
+        pythonWidget = mainWindow.findChild("QDockWidget", "PythonConsoleDockWidget")
         pythonWidget.setVisible(0)
-        panelWidget = window.findChild("QDockWidget", "PanelDockWidget")
+        panelWidget = mainWindow.findChild("QDockWidget", "PanelDockWidget")
         panelWidget.setVisible(0)
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
         for node in compNodes:
