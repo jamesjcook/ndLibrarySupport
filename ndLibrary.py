@@ -1,8 +1,10 @@
 ## Class for a library of data
 ## NOTE: Assumes files are in a Windows system
 ## Author: Austin Kao
+import sys
 import os
 import re
+import logging
 
 class ndLibrary:        
     ## Constructor for a ndLibrary
@@ -15,16 +17,41 @@ class ndLibrary:
     ## valid: A field that tells if an ndLibrary object is valid for use (Needs to pass the initial checks)
     def __init__(self, parent, file_loc):
         self.valid = False
+        ## set log bits so we can easily spam regex info for debug
+        #logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+        self.logger=logging.getLogger("ndLibrary")
+        #handler = logging.StreamHandler()
+        #self.logger.addHandler(handler)
+        #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        #formatter = logging.Formatter('%(message)s')
+        #handler.setFormatter(formatter)
+        # simple way to flag logging on/off
+        # set value to logging.DEBUG INFO WARNING ERROR
+        #self.logger.setLevel(logging.DEBUG)
+        #self.logger.setLevel(logging.INFO)
+        #self.logger.setLevel(logging.WARNING)
         # TODO: support libs as files as well as dir
         if not os.path.isdir(file_loc):
             print('Not a directory')
             return
+        self.conf_dir=file_loc
         self.conf_file_name = "lib.conf"
-        if not os.path.isfile(os.path.join(file_loc, self.conf_file_name)):
-            #print("No lib.conf file present")
-            return
+        self.conf_path = None
+        # TODO: adjust all the special field handlers to be simply read from the field.
+        #       Perhaps they should be accessors? 
+        #       Or we should craft a special operator to get access to fields?
+        self.recursion_field = "RecursiveLoad"
+        self.path_field = "Path"
+        # filter child/vol discovery 
+        self.filter_field = "FilePattern"
+        # carve filename into parts 
+        self.pattern_field = "FileAbrevPattern"
+        # pull parts of carved filename with this match info
+        self.match_field = "FileAbrevMatch"
         if isinstance(parent, type(self)):
-            self.fields = dict(parent.fields)
+            self.fields = parent.fields.copy()
+            if self.path_field in self.fields:
+                del self.fields[self.path_field]
         elif parent is None:
             self.fields = dict()
         else:
@@ -38,35 +65,34 @@ class ndLibrary:
         self.is_leaf = False
         # TODO: instead of volDict, add "node" field to definition, and the children will be ndLib nodes all the way down to the independent volumes, we'll update path as well to be the "fully-resolved" path to file.
         self.volDict = None
-        # TODO: adjust all the special field handlers to be simply read from the field.
-        #       Perhaps they should be accessors? 
-        #       Or we should craft a special operator to get access to fields?
-        self.recursion_field = "RecursiveLoad"
-        self.path_field = "Path"
-        self.match_field = "FileAbrevMatch"
-        self.pattern_field = "FilePattern"
-        self.filter_field = "FileAbrevPattern"
         self.labelDict = None
         self.labelVolume = None
         self.colorTable = None
         self.originTransform = None
         self.relevantStrainLib = False
-        if self.pattern_field in self.fields:
-            del self.fields[self.pattern_field]
-        if self.match_field in self.fields:
-            del self.fields[self.match_field]
+        #if self.pattern_field in self.fields:
+        #    del self.fields[self.pattern_field]
+        #if self.match_field in self.fields:
+        #    del self.fields[self.match_field]
+        self.extensionPriority = list(["nhdr", "nrrd", "nii.gz", "nii", "png", "tif", "jpg", "gif", "bmp"])
+        self.extReg = r".+[.]"+'(% s)' % '|'.join([sub.replace('.', '[.]') for sub in self.extensionPriority])+"$"
         ## Have ndLibrary automatically build the ndLibrary tree if it is a root?
-        self.extensionPriority = list({"nhdr", "nrrd", "nii.gz", "nii", "png", "tif", "jpg", "gif", "bmp"})
         if parent == None:
+            #self.logger.debug('debug message')
+            #self.logger.info('info message')
+            #self.logger.warning('warn message')
+            #self.logger.error('error message')
+            #self.logger.critical('critical message')
             self.loadEntire()
     
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
-    def loadConf(self, file):
+    def loadConf1(self, file):
         try:
             conf = open(file)
         except:
-            print("Could not open conf file")
+            print("Could not open conf file"+file)
             return
+        self.conf_path=file
         line = conf.readline()
         while line is not "":
             is_comment = False
@@ -79,38 +105,70 @@ class ndLibrary:
                 value = components[1].replace("\n", "")
                 self.fields[name] = value
             line = conf.readline()
-    
+
+    ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
+    def loadConf(self, file=None):
+        if file is None:
+            file=self.conf_path
+        with open(file) as fp:
+            # do stuff with fp
+            for cnt, line in enumerate(fp):
+                components = re.match(r"^([^#=]*)(?:=([^#]+))?(#.*)?$",line)
+                key=components.group(1)
+                value=components.group(2)
+                comment=components.group(3)
+                if key is not None and value is not None:
+                    self.fields[key.strip()] = value.strip()
+                elif (key is None or not key) and (value is None or not value):
+                    #print("Ignore line:"+line.strip())
+                    pass
+                elif key is None:
+                    print("conf error: bad key, value is "+value.strip())
+                elif value is None:
+                    print("conf error: bad value, key is "+key.strip())
+        self.conf_path = file
+
     ## Method to find and make child ndLibraries
     def buildChildren(self):
         if self.recursion_field in self.fields and self.fields[self.recursion_field] == "false":
             #print("Reached leaf of tree. No children")
             is_leaf = True
             return
-        os.chdir(self.file_loc)
-        if (self.recursion_field in self.fields and self.fields[self.recursion_field] == "true"
-            and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
-                #print("Going on another path: {}".format(self.fields[self.path_field]))
-                os.chdir(self.fields[self.path_field])
+        self.jumpToDir()
+        #if (self.recursion_field in self.fields and self.fields[self.recursion_field] == "true"
+        #    and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
+        #        #print("Going on another path: {}".format(self.fields[self.path_field]))
+        #        os.chdir(self.fields[self.path_field])
+        if self.filter_field in self.fields:
+            filter = self.fields[self.filter_field]
+        else:
+            self.logger.info("Lib very promiscuous: "+self.file_loc)
+            filter = ".*"
         for entry in os.listdir(os.getcwd()):
             #print(os.path.join(self.file_loc, entry))
-            if os.path.isdir(os.path.join(os.getcwd(), entry)):
+            if os.path.isdir(os.path.join(os.getcwd(), entry)) and re.match(r''+filter, entry):
                 child_lib = ndLibrary(self, os.path.join(os.getcwd(), entry))
                 if child_lib.isValid():
                     self.children.append(child_lib)
         if len(self.children) == 0:
-            is_leaf = True
+            self.is_leaf = True
     
     ## Method to load the entire ndLibrary tree
     ## Loads a conf file, makes all possible child ndLibraries, and repeats the process for each child
     def loadEntire(self):
-        if self.file_loc is not None and os.path.isfile(os.path.join(self.file_loc, self.conf_file_name)):
-            self.loadConf(os.path.join(self.file_loc, self.conf_file_name))
+        conf_path = os.path.join(self.file_loc, self.conf_file_name)
+        if self.file_loc is not None and os.path.isfile(conf_path):
+            #self.conf_path = conf_path
+            #print(self.conf_dir)
+            self.loadConf(conf_path)
             self.determineRelevance()
             if not self.valid:
                 return
+            self.jumpToDir()
+            self.Path=os.getcwd()
             self.loadVolumes()
             self.loadLabels()
-            self.loadoriginTransform()
+            self.loadOriginTransform()
             self.buildChildren()
             for child in self.children:
                 child.loadEntire()
@@ -121,7 +179,7 @@ class ndLibrary:
     ## Meant to be called after loading lib.conf file when building the entire tree
     ## May get incorrect result if used in other circumstances
     def determineRelevance(self):
-        if "TestingLib" in self.fields and self.fields["TestingLib"] == "true":
+        if "TestingLib" in self.fields and self.fields["TestingLib"].lower() == "true":
             self.relevantStrainLib = False
             self.valid = False
         elif "Category" in self.fields and self.fields["Category"] == "Species":
@@ -132,61 +190,122 @@ class ndLibrary:
     ## Function to change the working directory according to the path specfied in a lib.conf file
     ## By default, the function will change the working directory to the ndLibrary's directory
     def jumpToDir(self):
-        os.chdir(self.file_loc)
+        os.chdir(self.conf_dir)
         #if self.fields.has_key(self.path_field):
         if self.path_field in self.fields:
             relativePath = self.fields[self.path_field].replace("/","\\")
             if os.path.isdir(relativePath):
                 os.chdir(relativePath)
                 #print("Jumping to {}".format(os.getcwd()))
+            else:
+                print("Path jump error from "+self.conf_dir+" to "+relativePath)
+                self.isValid = False
+        #if self.conf_dir == os.path.getcwd():
+        #    return True
+        #return False
+    ## get list of all ancestors starting at parent
+    def ancesetorList(self,includeSelf=False):
+        ancestors = list()
+        lib = self
+        if includeSelf:
+            ancestors.append(lib)
+        while lib.parent is not None:
+            ancestors.append(lib.parent)
+            lib = lib.parent
+    
+    ## print the tree below our location
+    def printTree(self,indent=None):
+        if indent is None:
+            indent = ""
+        for child in self.children:
+            try:
+                volCount = len(child.volDict)
+            except:
+                volCount = 0
+            print(indent+os.path.basename(child.file_loc)+":"+str(volCount))
+            child.printTree(indent+"\t")
+    ## print entire connected tree by finding oldest parent
+    def printFullTree(self,indent=None):
+        lib = self
+        while lib.parent is not None:
+            lib=lib.parent
+        lib.printTree()
     
     ## Function that loads the volumes into a dictionary called volDict
     ## Keys for the dictionary are the type of volume ("fa", "dwi", etc.)
     ## Values are a tuple of (file_path, volume_node) where volume_node is initially None
     ## Libraries will load volumes on demand using the file_path
     ## See get_volume_node method for more details
+    ## TODO: adjust name from loadVolumes to more accurate, maybe discover?
     def loadVolumes(self):
         if self.volDict is not None:
             #print("Volumes are already loaded")
             return
-        if self.pattern_field in self.fields:
-            filePat = self.fields[self.pattern_field]
-        else:
-            #print("No files to be found")
-            return
         #print("Loading volumes for {}".format(self.file_loc))
         self.jumpToDir()
+        #print("\t"+os.getcwd())
+        if self.filter_field in self.fields:
+            filter = self.fields[self.filter_field]
+        else:
+            self.logger.info("Lib very permissive: "+self.file_loc)
+            filter = ".*"
+        if self.pattern_field in self.fields:
+            pattern=self.fields[self.pattern_field]
+        else:
+            pattern="(.*)"
+        ## the repPattern is not used directly, so its okay to garble it here.
+        if self.match_field in self.fields:
+            repPattern=" and "+self.fields[self.match_field]
+        else:
+            repPattern = ""
         try:
-            volumes = [f for f in os.listdir(os.getcwd()) if re.match(r''+filePat, f)]
+            libEntries = [f for f in os.listdir(os.getcwd()) if re.match(r''+filter, f) and not os.path.isdir(os.path.join(os.getcwd(),f))]
         except re.error:
-            #print("Bad regex")
+            self.logger.warning("loadVolumes bad regex " + filter +" for "+os.getcwd())
             return
-        #print("Found {} volumes with pattern {}".format(len(volumes), filePat))
-        if len(volumes) == 0:
-            #print("No volumes detected")
+        if len(libEntries) == 0:
+            self.logger.warning("No volumes detected: "+os.getcwd()+" using "+filter+" from conf "+self.conf_path)
             return
         self.volDict = dict()
-        for i in range(0, len(volumes)):
-            volPath = os.path.join(os.getcwd(), volumes[i])
-            extension = volumes[i].split(".", 1)[-1]
-            if os.path.isdir(volPath) or "label" in volumes[i] or not extension in self.extensionPriority:
+        volExtPriority = dict()
+        self.logger.debug("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
+        print("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
+        for i in range(0, len(libEntries)):
+            libPath = os.path.join(os.getcwd(), libEntries[i])
+            ext = re.match(r''+self.extReg, libEntries[i])
+            if ext is not None:
+              ext=ext.group(1)
+            if ext is None:
+                self.logger.debug("\tNot expected ext:"+libEntries[i]+" using:"+self.extReg)
                 continue
-            fileName = volumes[i].split(".")[0]
-            fileName = fileName.lower()
-            if self.filter_field in self.fields:
-                pattern = self.fields[self.filter_field]
-                pattern = pattern.replace("||","|") #Possible mistake with regex? Regex matching doesn't work as expected otherwise
-                match = re.search(pattern, fileName)
-                #print(pattern)
-                #print(fileName)
-                if match and len(match.groups()) > 1:
-                    #print(match.groups())
-                    self.addToVolDict(volPath, match.group(2))
-                elif match:
-                    #print(match.groups())
-                    self.addToVolDict(volPath, match.group(1))
+            cExtPriority = self.extensionPriority.index(ext)
+            #fileName = libEntries[i].split(".")[0]
+            libName = libEntries[i].replace(r"."+ext,"")
+            #libName = libEntries[i]
+            if self.match_field in self.fields:
+                match_text=self.fields[self.match_field]
             else:
-                self.volDict[fileName] = (volPath, None)
+                match_text=r"\1"
+            #match = re.search(pattern, libName)
+            try:
+                match_text=re.sub(pattern,match_text,libName.lower())
+            except:
+                self.logger.error("regex error "+match_text+" or "+pattern+" in conf:"+( o.conf_path for o in self.ancesetorList(True)) )
+            if match_text is None:
+                self.logger.warning("\t"+libName+" carve fail");
+                print("lib name to abrev fail:"+libName)
+                continue
+            #else:
+            #    match_text=match.group(1)
+            lExtPriority = 100
+            if match_text in volExtPriority:
+                lExtPriority = volExtPriority[match_text]
+            if lExtPriority > cExtPriority:
+                self.addToVolDict(libPath, match_text)
+                volExtPriority[match_text]=cExtPriority
+            else:
+                print("pri ex:"+libName)
+                self.logger.debug("\tpriority exclusion, e:"+str(lExtPriority)+" < c:"+str(cExtPriority)+" "+libName+"("+match_text+")")
         if len(self.volDict) == 0:
             self.volDict = None
             #print("No valid files found")
@@ -197,17 +316,18 @@ class ndLibrary:
         if key in self.fields:
             key = self.fields[key]
         ## Compare the file extensions if there are conflicting keys
-        if key in self.volDict:
-            currentExt = self.volDict[key][0].split(".", 1)[-1]
-            newExt = volPath.split(".", 1)[-1]
-            for ext in self.extensionPriority:
-                if ext == newExt:
-                    self.volDict[key] = (volPath, None)
-                    break
-                if ext == currentExt:
-                    break
-        else:
-            self.volDict[key] = (volPath, None)
+        #if key in self.volDict:
+        #    currentExt = self.volDict[key][0].split(".", 1)[-1]
+        #    newExt = volPath.split(".", 1)[-1]
+        #    for ext in self.extensionPriority:
+        #        if ext == newExt:
+        #            self.volDict[key] = (volPath, None)
+        #            break
+        #        if ext == currentExt:
+        #            break
+        #else:
+        #    self.volDict[key] = (volPath, None)
+        self.volDict[key] = (volPath, None)
     
     ## Loads in the label volume file for a particular specimen
     ## Loads the lookup table for the different regions of the brain
@@ -216,30 +336,39 @@ class ndLibrary:
         if self.labelDict is not None and self.colorTable is not None and self.labelVolume is not None:
             print("Labels are already loaded")
             return
+        labelPat = r".*labels[.]"
+        lookupPat = ".*_lookup[.](?:txt|ctbl)"
         if self.pattern_field in self.fields:
-            labelPat = self.fields[self.pattern_field]
+            filePattern = self.fields[self.pattern_field]
         else:
+            filePattern=r".*"
             #print("No files to be found")
-            return
+            #return
         #print("Loading labels for {}".format(self.file_loc))
-        tablePat = ".*[.]txt"
         self.jumpToDir()
         try:
-            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f)]
-            clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+tablePat, f)]
+            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filePattern, f) and os.path.isfile(f) ]
+            clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filePattern, f) and os.path.isfile(f)]
         except re.error:
-            #print("Bad regex")
+            print("loadLabels failed on regex match "+filePattern)
             return
         if len(labels) == 0 or len(clts) == 0:
             #print("Cannot be a label directory")
             return
+        extPriority = 100
         for i in range(0, len(labels)):
-            if (not os.path.isfile(labels[i]) or not "label" in labels[i] or
-                not labels[i].split(".", 1)[-1] == "nii.gz"):
-                    continue
-            labelPath = os.path.join(os.getcwd(), labels[i])
-            #print(labelPath)
-            self.labelVolume = (labelPath, None)
+            f = os.path.basename(labels[i])
+            ext = re.match(r''+self.extReg,f)
+            if ext is not None:
+              ext=ext.groups()[0]
+            if ext is None:
+                print("Not expected ext:"+f+" using:"+self.extReg)
+                continue
+            lExtPriority = self.extensionPriority.index(ext)
+            if lExtPriority<extPriority:
+                labelPath = os.path.join(os.getcwd(), labels[i])
+                #print(labelPath)
+                self.labelVolume = (labelPath, None)
         if not isinstance(self.labelVolume, tuple):
             #print("Not a tuple. No valid volumes found.")
             return
@@ -248,12 +377,11 @@ class ndLibrary:
         txt = open(clts[0])
         #print("Found color lookup table")
         self.labelDict = dict()
-        if not '2.7' in sys.version:
+        if (sys.version_info > (3, 0)):
             # slicer py3 call, nightlies, and future next release
-            # confusingly look for py2.7 becuase that is not likley to change.
             colorTable = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]))
         else:
-            #slicer py2 call, latest 4.10.2 release
+            #slicer py2 call, current release(as of 2020-10) 4.10.2
             [loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
             if not loadSuccess:
                 colorTable = None
@@ -285,7 +413,7 @@ class ndLibrary:
     ## originTransform is a tuple with two elements
     ## Element 0 is the file path for the transform
     ## Element 1 is the transform node in 3D Slicer
-    def loadoriginTransform(self):
+    def loadOriginTransform(self):
         if not "OriginTransform" in self.fields:
             #print("No path to follow for origin transform")
             return
@@ -302,11 +430,18 @@ class ndLibrary:
     def getOriginTransform(self):
         if self.originTransform is not None:
             if self.originTransform[1] is None:
-                [loadSuccess, transformNode]=slicer.util.loadTransform(self.originTransform[0], True)
-                if loadSuccess == 0:
-                    print("Failed to load transform:"+self.originTransform[0])
+                if (sys.version_info > (3, 0)):
+                    # slicer py3 call, nightlies, and future next release
+                    transformNode = slicer.util.loadTransform(self.originTransform[0])
                 else:
+                    #slicer py2 call, current release(as of 2020-10) 4.10.2
+                    [loadSuccess, transformNode]=slicer.util.loadTransform(self.originTransform[0], returnNode=True)
+                    if loadSuccess == 0:
+                        transformNode = None
+                if transformNode is not None:
                     self.originTransform = (self.originTransform[0], transformNode)
+                else:
+                    print("Failed to load transform:"+self.originTransform[0])
             return self.originTransform[1]
         return None
     
@@ -330,15 +465,19 @@ class ndLibrary:
             return
         volNode = self.volDict[key][1]
         if volNode is None:
-            [LoadSuccess, volNode]=slicer.util.loadVolume(self.volDict[key][0],{'show':False},True)
-            if LoadSuccess==0:
-                print("Error loading volume")
-                return None
+            if (sys.version_info > (3, 0)):
+                volNode=slicer.util.loadVolume(self.volDict[key][0],{'show':False})
             else:
+                [LoadSuccess, volNode]=slicer.util.loadVolume(self.volDict[key][0],{'show':False},returnNode=True)
+                if LoadSuccess==0:
+                    volNode = None
+            if volNode is not None:
                 self.volDict[key] = (self.volDict[key][0], volNode)
                 originTransform = self.getOriginTransform()
                 if originTransform is not None:
                     volNode.SetAndObserveTransformNodeID(originTransform.GetID())
+            else:
+                print("Error loading volume")
         return volNode
     
     ## Returns the name of a labeled region given a region number read from the color lookup table
@@ -383,12 +522,11 @@ class ndLibrary:
         if self.labelVolume == None:
             return None
         if self.labelVolume[1] is None:
-            if not '2.7' in sys.version:
+            if (sys.version_info > (3, 0)):
                 # slicer py3 call, nightlies, and future next release
-                # confusingly look for py2.7 becuase that is not likley to change.
                 labelVolumeNode = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False})
             else:
-                #slicer py2 call, latest 4.10.2 release
+                #slicer py2 call, current release(as of 2020-10) 4.10.2
                 [loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
                 if not loadSuccess:
                     labelVolumeNode = None
