@@ -4,6 +4,7 @@ import os
 import re
 import math
 import sys
+import logging
 import qt
 import slicer
 
