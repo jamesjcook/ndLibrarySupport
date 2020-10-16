@@ -53,6 +53,9 @@ class InteractiveLabelSelector:
             print("Invalid library used")
             return
         self.library = library
+        if library.getColorTableNode() is None:
+            print("Lookup table not available")
+            return
         self.comboBox.currentNodeID = u'' + library.getColorTableNode().GetID()
         self.setHideColorsCheckState(0)
         numRows = self.tableView.colorModel().rowCount()
