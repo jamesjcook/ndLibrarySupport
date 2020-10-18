@@ -47,6 +47,19 @@ class volumeDropdown(qt.QComboBox):
             print("Not a library")
             return
         self.clear()
-        for key in library.getEntireVolumeSet():
+        volset = library.getEntireVolumeSet().copy()
+        if library.vol_ordering in library.fields:
+            sorting = library.fields[library.vol_ordering].split(',')
+            #print("use sorting")
+        else:
+            sorting = None
+        if sorting is not None:
+            for key in sorting:
+                if key in volset:
+                    #print("insert "+key)
+                    self.addItem(key)
+                    self.libDict[key] = library
+                    del volset[key]
+        for key in volset:
             self.addItem(key)
             self.libDict[key] = library
