@@ -48,6 +48,7 @@ class ndLibrary:
         self.pattern_field = "FileAbrevPattern"
         # pull parts of carved filename with this match info
         self.match_field = "FileAbrevMatch"
+        self.vol_ordering = "PreferedImgTypeAbbrevOrder"
         if isinstance(parent, type(self)):
             self.fields = parent.fields.copy()
             if self.path_field in self.fields:
@@ -126,6 +127,12 @@ class ndLibrary:
                     print("conf error: bad key, value is "+value.strip())
                 elif value is None:
                     print("conf error: bad value, key is "+key.strip())
+        # clean up routine typeo, except its so pervasive... 
+        #if self.pattern_field not in self.fields and "FileAbrevPattern" in self.fields:
+        #    self.pattern_field = "FileAbrevPattern"
+        #    self.fields[self.pattern_field]=
+        #if self.match_field not in self.fields and "FileAbbrevMatch" in self.fields:
+        #    self.match_field = "FileAbrevMatch"
         self.conf_path = file
 
     ## Method to find and make child ndLibraries
@@ -213,6 +220,10 @@ class ndLibrary:
             ancestors.append(lib.parent)
             lib = lib.parent
     
+    ## print conf
+    def printConf(self):
+        for e in self.fields:
+            print("\t"+e+"\t= "+self.fields[e])
     ## print the tree below our location
     def printTree(self,indent=None):
         if indent is None:
@@ -269,7 +280,7 @@ class ndLibrary:
         self.volDict = dict()
         volExtPriority = dict()
         self.logger.debug("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
-        print("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
+        #print("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
         for i in range(0, len(libEntries)):
             libPath = os.path.join(os.getcwd(), libEntries[i])
             ext = re.match(r''+self.extReg, libEntries[i])
@@ -292,8 +303,8 @@ class ndLibrary:
             except:
                 self.logger.error("regex error "+match_text+" or "+pattern+" in conf:"+( o.conf_path for o in self.ancesetorList(True)) )
             if match_text is None:
-                self.logger.warning("\t"+libName+" carve fail");
-                print("lib name to abrev fail:"+libName)
+                self.logger.warning("lib name to abrev fail:"+libName)
+                #print("lib name to abrev fail:"+libName)
                 continue
             #else:
             #    match_text=match.group(1)
@@ -304,7 +315,7 @@ class ndLibrary:
                 self.addToVolDict(libPath, match_text)
                 volExtPriority[match_text]=cExtPriority
             else:
-                print("pri ex:"+libName)
+                #print("pri ex:"+libName)
                 self.logger.debug("\tpriority exclusion, e:"+str(lExtPriority)+" < c:"+str(cExtPriority)+" "+libName+"("+match_text+")")
         if len(self.volDict) == 0:
             self.volDict = None
@@ -313,8 +324,9 @@ class ndLibrary:
     ## Helper function that handles how a determined path and key are added to the volDict
     def addToVolDict(self, volPath, key):
         ## Check if another name is wanted according to the lib.conf file
-        if key in self.fields:
-            key = self.fields[key]
+        if "LibNameSubstitution" in self.fields and self.fields["LibNameSubstitution"].lower() == "true":
+            if key in self.fields:
+                key = self.fields[key]
         ## Compare the file extensions if there are conflicting keys
         #if key in self.volDict:
         #    currentExt = self.volDict[key][0].split(".", 1)[-1]
@@ -336,24 +348,26 @@ class ndLibrary:
         if self.labelDict is not None and self.colorTable is not None and self.labelVolume is not None:
             print("Labels are already loaded")
             return
-        labelPat = r".*labels[.]"
+        labelPat = r".*[._-]labels[._-].*"
         lookupPat = ".*_lookup[.](?:txt|ctbl)"
-        if self.pattern_field in self.fields:
-            filePattern = self.fields[self.pattern_field]
+        if self.filter_field in self.fields:
+            filter = self.fields[self.filter_field]
         else:
-            filePattern=r".*"
+            filter=r".*"
             #print("No files to be found")
             #return
         #print("Loading labels for {}".format(self.file_loc))
         self.jumpToDir()
         try:
-            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filePattern, f) and os.path.isfile(f) ]
-            clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filePattern, f) and os.path.isfile(f)]
+            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
+            clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filter, f) and os.path.isfile(f)]
         except re.error:
-            print("loadLabels failed on regex match "+filePattern)
+            print("loadLabels failed on regex match "+labelPat+" and "+filter)
             return
-        if len(labels) == 0 or len(clts) == 0:
-            #print("Cannot be a label directory")
+        #if re.match(".*labels.*", os.getcwd()) and ( len(labels) == 0 or len(clts) == 0 ):
+        if "labels" in os.getcwd() and ( len(labels) == 0 or len(clts) == 0 ):
+            #print("loadLabels unsucecssful, labels found:"+str(len(labels))+" color tables:"+str(len(clts)))
+            #print("\t"+os.getcwd()+"  pattern: "+filter+" lbl filter: "+labelPat+" ctbl filter: "+lookupPat)
             return
         extPriority = 100
         for i in range(0, len(labels)):
@@ -593,19 +607,23 @@ class ndLibrary:
             volumeDict = child.getEntireVolumeSet()
             if volumeDict is not None:
                 for key in volumeDict:
-                    if key in entireDict:
-                        currentExt = entireDict[key][0].split(".", 1)[-1]
-                        newExt = volumeDict[key][0].split(".", 1)[-1]
-                        #print(currentExt)
-                        #print(newExt)
-                        for ext in self.extensionPriority:
-                            if ext == currentExt:
-                                #print("chose {}".format(currentExt))
-                                break
-                            if ext == newExt:
-                                #print("chose {}".format(newExt))
-                                entireDict[key] = volumeDict[key]
-                                break
-                    else:
+                    if not key in entireDict:
                         entireDict[key] = volumeDict[key]
+                    #if key in entireDict:
+                    #    currentExt = entireDict[key][0].split(".", 1)[-1]
+                    #    newExt = volumeDict[key][0].split(".", 1)[-1]
+                    #    #print(currentExt)
+                    #    #print(newExt)
+                    #    for ext in self.extensionPriority:
+                    #        if ext == currentExt:
+                    #            #print("chose {}".format(currentExt))
+                    #            break
+                    #        if ext == newExt:
+                    #            #print("chose {}".format(newExt))
+                    #            entireDict[key] = volumeDict[key]
+                    #            break
+                    #else:
+                    #    entireDict[key] = volumeDict[key]
+        if "labels" in entireDict:
+            del entireDict["labels"]
         return entireDict
