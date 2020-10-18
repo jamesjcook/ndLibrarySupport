@@ -1,5 +1,6 @@
 ## An object that instantiates different GUI elements and manages the ndLibrary data for each of them
 ## Author: Austin Kao
+## OBSOLETE Replaced by manager.py
 
 ## Function to initialize the ndLibraryViewer
 def initializeNDLibraryViewer(rootDir):
