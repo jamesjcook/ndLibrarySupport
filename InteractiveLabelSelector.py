@@ -28,6 +28,14 @@ class InteractiveLabelSelector:
         self.nonePushButton = qt.QPushButton("Turn off all labels")
         self.allPushButton.released.connect(self.turnOnLabels)
         self.nonePushButton.released.connect(self.turnOffLabels)
+        #insert(through theft from data probe) label line to bottom of window
+        statusBar = slicer.util.mainWindow().findChildren('QStatusBar')[0]
+        regionLabel = slicer.modules.DataProbeInstance.infoWidget.layerValues["L"]
+        #regionLabel.setMinimumHeight(regionLabel.minimumSizeHint.height()*2)
+        #mainMenuBar = slicer.util.mainWindow().findChild("QMenuBar", "menubar")
+        statusBar.addWidget(regionLabel)
+        statusBar.setMinimumHeight(statusBar.height*2.1)
+        #mainMenuBar.addWidget(statusBar)
         qtLayout = slicer.app.layoutManager().sliceWidget(nodeTag).layout()
         self.nodeTag = nodeTag
         qtLayout.addWidget(self.allPushButton)
@@ -123,6 +131,8 @@ class InteractiveLabelSelector:
     ## In the future, maybe change lookup table to the one being used by the labelmap volume?
     ## Double clicking a particular row will change the opacity value between 0 and 1        
     def toggleColor(self, roiNum):
+        if roiNum == 0:
+            return
         colorTable = self.library.getColorTableNode()
         if colorTable is None:
             return
