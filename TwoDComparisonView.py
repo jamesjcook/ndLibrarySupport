@@ -17,7 +17,7 @@ def setTwoDComparisonView():
       "   </item>"
       "   <item>"
       "    	<view class=\"vtkMRMLSliceNode\" singletontag=\"Load\">"
-      "      <property name=\"orientation\" action=\"default\">Coronal</property>"
+      "      <property name=\"orientation\" action=\"default\">Axial</property>"
       "      <property name=\"viewlabel\" action=\"default\">Load</property>"
       "      <property name=\"viewcolor\" action=\"default\">#909090</property>"
       "   	</view>"
@@ -48,7 +48,7 @@ def setTwoDComparisonView():
     customLayoutId=586
     layoutManager = slicer.app.layoutManager()
     layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
-    layoutManager.setLayout(586)
+    layoutManager.setLayout(customLayoutId)
     # following copied per code on slicer discourse at:
     # https://discourse.slicer.org/t/slicer-crashes-when-adding-2-custom-layouts-in-startup-script/9071
     ## Add button to layout selector toolbar for this custom layout
