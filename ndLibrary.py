@@ -522,6 +522,7 @@ class ndLibrary:
             ctblKey="ColorTable_"+key
             if ctblKey in self.fields:
                 ctbl=os.path.join(os.path.dirname(self.volDict[key][0]),self.fields[ctblKey])
+                print("custom color table:"+self.fields[ctblKey]+" for "+key)
             else:
                 ctbl = None
             if (sys.version_info > (3, 0)):
@@ -653,7 +654,8 @@ class ndLibrary:
     
     ## Function that collects all of the volDict information for an ndLibrary and all child ndLibraries
     ## Include volDict information from children of children and so forth
-    def getEntireVolumeSet(self):
+    ## this unfortunately loses libconf information replacing it with oldest parent.
+    def getEntireVolumeSetPaths(self):
         if self.volDict is not None:
             entireDict = self.volDict
         else:
@@ -664,21 +666,25 @@ class ndLibrary:
                 for key in volumeDict:
                     if not key in entireDict:
                         entireDict[key] = volumeDict[key]
-                    #if key in entireDict:
-                    #    currentExt = entireDict[key][0].split(".", 1)[-1]
-                    #    newExt = volumeDict[key][0].split(".", 1)[-1]
-                    #    #print(currentExt)
-                    #    #print(newExt)
-                    #    for ext in self.extensionPriority:
-                    #        if ext == currentExt:
-                    #            #print("chose {}".format(currentExt))
-                    #            break
-                    #        if ext == newExt:
-                    #            #print("chose {}".format(newExt))
-                    #            entireDict[key] = volumeDict[key]
-                    #            break
-                    #else:
-                    #    entireDict[key] = volumeDict[key]
+        if "labels" in entireDict:
+            del entireDict["labels"]
+        return entireDict
+    
+    ## Function that collects pointers to lib for all volDict for an ndLibrary and all child ndLibraries
+    ## Include volDict information from children of children and so forth
+    def getEntireVolumeSet(self):
+        entireDict = dict()
+        if self.volDict is not None:
+            #entireDict = self.volDict
+            for key in self.volDict:
+                entireDict[key] = self
+        #type(self.libDict[name]) is tuple:
+        for child in self.children:
+            volumeDict = child.getEntireVolumeSet()
+            if volumeDict is not None:
+                for key in volumeDict:
+                    if not key in entireDict:
+                        entireDict[key] = child
         if "labels" in entireDict:
             del entireDict["labels"]
         return entireDict

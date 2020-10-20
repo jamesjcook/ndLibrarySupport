@@ -27,6 +27,7 @@ class volumeDropdown(qt.QComboBox):
         #self.loadSigA = r"|/-\\"
         #self.loadSigI = 0
         self.statusMessage = ""
+        self.viewSet = False
     
     ## Function that will change the volume image being looked at
     ## Because of how the dropdown menu is set up, any entry in volDict should at least have a file path
@@ -40,12 +41,23 @@ class volumeDropdown(qt.QComboBox):
         if name not in self.libDict:
             return
         compString = "vtkMRMLSliceCompositeNode"+str(self.nodeTag)
-        sliceString = "vtkMRMLSliceNode"+str(self.nodeTag)
+        #sliceString = "vtkMRMLSliceNode"+str(self.nodeTag)
         compNode = slicer.app.mrmlScene().GetNodeByID(compString)
         self.statusMessage = "loading "+name+" ..."
         slicer.util.showStatusMessage(self.statusMessage)
         self.setItemText(index,self.statusMessage)
+        slicer.util.mainWindow().update()
         #self.loadSignal.start(250)
+        
+        #if type(self.volDict) is tuple:
+        #    volNode = self.volDict[key][1]
+        #else:
+        #    print("Bizarro code path")
+        #    volNode = self.volDict[key][1]
+        
+        if type(self.libDict[name]) is tuple:
+            print("error on "+name+" select, coder is off their rocker and passed tuple instead of ndLibrary")
+            return
         volNode = self.libDict[name].get_volume_node(name)
         if volNode is not None:
             compNode.SetBackgroundVolumeID(volNode.GetID())
@@ -59,8 +71,19 @@ class volumeDropdown(qt.QComboBox):
             compNode.SetReferenceLabelVolumeID(self.libDict[name].getLabelVolume().GetID())
         #killtimer?
         #self.loadSignal.stop()
-        slicer.app.layoutManager().resetSliceViews()
+        if not self.viewSet:
+            #slicer.app.layoutManager().resetSliceViews()
+            sliceWidget = slicer.app.layoutManager().sliceWidget(self.nodeTag)
+            sliceWidget.fitSliceToBackground()
+            # Avoid starting at midline display for Navigator because of label transformation effects
+            nW=slicer.app.layoutManager().sliceWidget("Nav")
+            val=nW.sliceController().sliceOffsetSlider().value
+            #if "Nav" in self.nodeTag:
+            if abs(val) < 0.250:
+                nW.sliceController().setSliceOffsetValue(0.250)
+            self.viewSet = True
     # interface is DISABLED while loading so this is not possible
+    # Maybe slicer.util.mainWindow().update() will force re-draw?
     #def busySpinner(self):
     #    self.loadSigI += 1
     #    self.loadSigI = self.loadSigI % len(self.loadSigA)
@@ -83,7 +106,11 @@ class volumeDropdown(qt.QComboBox):
                 if key in volset:
                     #print("insert "+key)
                     self.addItem(key)
-                    self.libDict[key] = library
+                    if isinstance(volset[key], ndLibrary):
+                        print("key using sublib")
+                        self.libDict[key] = volset[key]
+                    else:
+                        self.libDict[key] = library
                     del volset[key]
         for key in volset:
             self.addItem(key)
