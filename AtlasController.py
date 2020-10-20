@@ -8,7 +8,7 @@ class AtlasController(): ## Rename?
     ## Function that sets up the ndLibrary selected from the DataPackageMenu
     def setUpLibrary(self, library):
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-        ## Clear the scene
+        ## "Clear" the scene
         for node in compNodes:
             node.SetBackgroundVolumeID("None")
             node.SetForegroundVolumeID("None")
@@ -33,12 +33,22 @@ class AtlasController(): ## Rename?
         self.labelSelector = InteractiveLabelSelector(None, "Nav")
         self.angleSlider = AngleSlider("Nav", "Compare1", "Compare2")
         ## Modify Slicer's main window
+        ## Hide toolbars
+        ## Set mouse interaction mode if its available
         ## Hides Python Interactor, module panel
         ## Makes slice intersections visible
         ## May be better to move this code outside the controller?
         mainWindow = slicer.util.mainWindow()
         for toolbar in mainWindow.findChildren("QToolBar"):
             toolbar.setVisible(0)
+            if "Mouse" in toolbar.name:
+                #print(toolbar.name)
+                #action=toolbar.actions()[1]
+                for action in toolbar.actions():
+                    if "Adjust" in action.name and "Window" in action.name:
+                        if not action.isChecked():
+                            action.toggle()
+                            break
         pythonWidget = mainWindow.findChild("QDockWidget", "PythonConsoleDockWidget")
         pythonWidget.setVisible(0)
         panelWidget = mainWindow.findChild("QDockWidget", "PanelDockWidget")
