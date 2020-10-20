@@ -79,6 +79,8 @@ class ndLibrary:
         self.extReg = r".+[.]"+'(% s)' % '|'.join([sub.replace('.', '[.]') for sub in self.extensionPriority])+"$"
         ## Have ndLibrary automatically build the ndLibrary tree if it is a root?
         if parent == None:
+            # to make life easier we're gonna dict transforms, but only in the oldest ancestor(the progenitor).
+            self.transforms = dict()
             #self.logger.debug('debug message')
             #self.logger.info('info message')
             #self.logger.warning('warn message')
@@ -139,9 +141,8 @@ class ndLibrary:
     def buildChildren(self):
         if self.recursion_field in self.fields and self.fields[self.recursion_field] == "false":
             #print("Reached leaf of tree. No children")
-            is_leaf = True
+            self.is_leaf = True
             return
-        self.jumpToDir()
         #if (self.recursion_field in self.fields and self.fields[self.recursion_field] == "true"
         #    and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
         #        #print("Going on another path: {}".format(self.fields[self.path_field]))
@@ -151,10 +152,13 @@ class ndLibrary:
         else:
             self.logger.info("Lib very promiscuous: "+self.file_loc)
             filter = ".*"
+        self.jumpToDir()
         for entry in os.listdir(os.getcwd()):
             #print(os.path.join(self.file_loc, entry))
+            self.jumpToDir()
             if os.path.isdir(os.path.join(os.getcwd(), entry)) and re.match(r''+filter, entry):
                 child_lib = ndLibrary(self, os.path.join(os.getcwd(), entry))
+                child_lib.loadEntire()
                 if child_lib.isValid():
                     self.children.append(child_lib)
         if len(self.children) == 0:
@@ -173,12 +177,18 @@ class ndLibrary:
                 return
             self.jumpToDir()
             self.Path=os.getcwd()
+            self.loadOriginTransform()
             self.loadVolumes()
             self.loadLabels()
-            self.loadOriginTransform()
             self.buildChildren()
-            for child in self.children:
-                child.loadEntire()
+            
+            #for child in self.children:
+            #    child.loadEntire()
+            #for i in xrange(len(somelist) - 1, -1, -1):
+            #    #element = somelist[i]
+            #for c in range(len(self.children) - 1, -1, -1):
+            #    if not self.children[c].isValid():
+            #        del self.children[c]
         else:
             print("Not loading for {}".format(self.file_loc))
     
@@ -206,12 +216,12 @@ class ndLibrary:
                 #print("Jumping to {}".format(os.getcwd()))
             else:
                 print("Path jump error from "+self.conf_dir+" to "+relativePath)
-                self.isValid = False
+                self.valid = False
         #if self.conf_dir == os.path.getcwd():
         #    return True
         #return False
     ## get list of all ancestors starting at parent
-    def ancesetorList(self,includeSelf=False):
+    def ancestorList(self,includeSelf=False):
         ancestors = list()
         lib = self
         if includeSelf:
@@ -219,6 +229,7 @@ class ndLibrary:
         while lib.parent is not None:
             ancestors.append(lib.parent)
             lib = lib.parent
+        return ancestors
     
     ## print conf
     def printConf(self):
@@ -229,11 +240,17 @@ class ndLibrary:
         if indent is None:
             indent = ""
         for child in self.children:
+            if not child.isValid():
+                print("invalid child"+child.conf_dir)
             try:
                 volCount = len(child.volDict)
             except:
                 volCount = 0
             print(indent+os.path.basename(child.file_loc)+":"+str(volCount))
+            try:
+                print(indent+"  "+child.Path)
+            except:
+                print(indent+"  UNBUILT "+child.conf_dir)
             child.printTree(indent+"\t")
     ## print entire connected tree by finding oldest parent
     def printFullTree(self,indent=None):
@@ -301,7 +318,7 @@ class ndLibrary:
             try:
                 match_text=re.sub(pattern,match_text,libName.lower())
             except:
-                self.logger.error("regex error "+match_text+" or "+pattern+" in conf:"+( o.conf_path for o in self.ancesetorList(True)) )
+                self.logger.error("regex error "+match_text+" or "+pattern+" in conf:"+( o.conf_path for o in self.ancestorList(True)) )
             if match_text is None:
                 self.logger.warning("lib name to abrev fail:"+libName)
                 #print("lib name to abrev fail:"+libName)
@@ -437,12 +454,31 @@ class ndLibrary:
         self.jumpToDir()
         originPath = self.fields["OriginTransform"].replace("/","\\")
         if os.path.isfile(originPath):
-            self.originTransform = (os.path.join(os.getcwd(), originPath), None)
-    
+            # fully resolve the originPath so we can find by path.
+            relD=os.path.dirname(originPath)
+            if not relD:
+                originPath = os.path.join(os.getcwd(), originPath)
+            else:
+                os.chdir(relD)
+                originPath = os.path.join(os.getcwd(), os.path.basename(originPath))
+            if os.path.isfile(originPath):
+                self.originTransform = (originPath, None)
+                #ot=self.getOriginTransform()
+            else:
+                self.jumpToDir()
+                print("error resolving "+self.fields["OriginTransform"]+" in "+os.getcwd()+" for lib "+self.conf_dir)
+            #if self.parent is not None and self.parent.originTransform is not None and self.parent.originTransform[1] is not None:
+            #    ot.SetAndObserveTransformNodeID(self.parent.originTransform[1].GetID())
+        else:
+            print("Error on transform resolution:"+originPath+" in "+self.conf_dir)
     ## Returns the origin transform for a given volume
     ## Loads the transform into Slicer if it has not been loaded yet
     def getOriginTransform(self):
         if self.originTransform is not None:
+            ancestors=self.ancestorList(True)
+            tformStashLib = ancestors[-1]
+            if tformStashLib is not None and self.originTransform[0] in tformStashLib.transforms:
+                self.originTransform = (self.originTransform[0], tformStashLib.transforms[self.originTransform[0]])
             if self.originTransform[1] is None:
                 if (sys.version_info > (3, 0)):
                     # slicer py3 call, nightlies, and future next release
@@ -454,8 +490,9 @@ class ndLibrary:
                         transformNode = None
                 if transformNode is not None:
                     self.originTransform = (self.originTransform[0], transformNode)
+                    tformStashLib.transforms[self.originTransform[0]] = transformNode
                 else:
-                    print("Failed to load transform:"+self.originTransform[0])
+                    print("Failed to load transform:"+self.originTransform[0]+" from "+self.conf_dir)
             return self.originTransform[1]
         return None
     
@@ -468,20 +505,34 @@ class ndLibrary:
     ## Returns a volume given the type of volume wanted (i.e. fa, dwi)
     ## Loads the volume into Slicer if it has not been loaded yet
     def get_volume_node(self, key):
-        if self.volDict is None:
+        # No volDict, check children.
+        if self.volDict is None or key not in self.volDict:
             for child in self.children:
                 volNode = child.get_volume_node(key)
                 if volNode is not None:
                     return volNode
+            try:
+                print("Invalid key "+key+" in "+self.Path)
+            except:
+                print("Invalid key "+key+" in unbuilt lib from conf "+self.conf_dir)
             return None
-        if not key in self.volDict:
-            print("Invalid key")
-            return
         volNode = self.volDict[key][1]
         if volNode is None:
+            #slicer.util.showStatusMessage("loading "+key+" ...")
+            ctblKey="ColorTable_"+key
+            if ctblKey in self.fields:
+                ctbl=os.path.join(os.path.dirname(self.volDict[key][0]),self.fields[ctblKey])
+            else:
+                ctbl = None
             if (sys.version_info > (3, 0)):
+                if ctbl is not None:
+                    ctbl=slicer.util.loadColorTable(ctbl)
                 volNode=slicer.util.loadVolume(self.volDict[key][0],{'show':False})
             else:
+                if ctbl is not None:
+                    [loadSuccess,ctbl]=slicer.util.loadColorTable(ctbl,returnNode=True)
+                    if loadSuccess == 0:
+                        ctbl = None
                 [LoadSuccess, volNode]=slicer.util.loadVolume(self.volDict[key][0],{'show':False},returnNode=True)
                 if LoadSuccess==0:
                     volNode = None
@@ -490,8 +541,12 @@ class ndLibrary:
                 originTransform = self.getOriginTransform()
                 if originTransform is not None:
                     volNode.SetAndObserveTransformNodeID(originTransform.GetID())
+                if ctbl is not None:
+                    volNode.GetDisplayNode().SetAndObserveColorNodeID(ctbl.GetID())
             else:
-                print("Error loading volume")
+                #slicer.util.showStatusMessage(key+ " Error loading")
+                print("Error loading volume:"+key)
+            #slicer.util.showStatusMessage("")
         return volNode
     
     ## Returns the name of a labeled region given a region number read from the color lookup table
