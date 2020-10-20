@@ -1,6 +1,6 @@
 ## lib.conf loader/saver/handler 
 
-class ndLibraryConf:
+class conf:
     def __init__(self,confPath):
         # fields is the name ready to use fields
         self.fields=dict()
