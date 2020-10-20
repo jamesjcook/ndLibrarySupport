@@ -6,6 +6,8 @@ import os
 import re
 import logging
 
+import ndLibrarySupport
+
 class ndLibrary:        
     ## Constructor for a ndLibrary
     ## parent: The parent ndLibrary
@@ -54,7 +56,8 @@ class ndLibrary:
             if self.path_field in self.fields:
                 del self.fields[self.path_field]
         elif parent is None:
-            self.fields = dict()
+            #self.fields = ndLibrarySupport.conf()
+            pass
         else:
             print("Parent is invalid")
             return
@@ -171,7 +174,12 @@ class ndLibrary:
         if self.file_loc is not None and os.path.isfile(conf_path):
             #self.conf_path = conf_path
             #print(self.conf_dir)
-            self.loadConf(conf_path)
+            #before we subclassed dict
+            #self.conf=ndLibrarySupport.conf(conf_path)
+            #self.fields=self.conf.fields.copy()
+            self.fields=ndLibrarySupport.conf(conf_path)
+            self.conf_path=conf_path
+            #self.loadConf(conf_path)
             self.determineRelevance()
             if not self.valid:
                 return
@@ -498,7 +506,7 @@ class ndLibrary:
     
     ## Returns the volDict for an ndLibrary
     def get_volume_dict(self):
-        if isinstance(self.volDict, ndLibrary):
+        if isinstance(self.volDict, type(self)):
             return self.volDict.get_volume_dict()
         return self.volDict
     
@@ -552,7 +560,7 @@ class ndLibrary:
     
     ## Returns the name of a labeled region given a region number read from the color lookup table
     def getRegionLabel(self, num):
-        if isinstance(self.labelDict, ndLibrary):
+        if isinstance(self.labelDict, type(self)):
             return self.labelDict.getRegionLabel(num)
         if not num in self.labelDict:
             print("Invalid region number")
@@ -571,7 +579,7 @@ class ndLibrary:
     
     ## Returns the color table node associated with the ndLibrary
     def getColorTableNode(self):
-        if isinstance(self.colorTable, ndLibrary):
+        if isinstance(self.colorTable, type(self)):
             return self.colorTable.getColorTableNode()
         if self.colorTable is not None:
             return self.colorTable[1]
@@ -579,14 +587,14 @@ class ndLibrary:
     
     ## Returns the labelDict associated with the ndLibrary
     def getLabelDict(self):
-        if isinstance(self.labelDict, ndLibrary):
+        if isinstance(self.labelDict, type(self)):
             return self.labelDict.getLabelDict()
         return self.labelDict
     
     ## Returns the label volume associated with the ndLibrary
     ## Loads the label volume into Slicer if not loaded yet
     def getLabelVolume(self):
-        if isinstance(self.labelVolume, ndLibrary):
+        if isinstance(self.labelVolume, type(self)):
             #print("Going to {}".format(self.labelVolume.file_loc))
             return self.labelVolume.getLabelVolume()
         if self.labelVolume == None:
@@ -617,7 +625,7 @@ class ndLibrary:
     ## From the region number of a label, get the row number for the table of label colors (Found in Colors module)
     ## Mostly used for InteractiveLabelSelector
     def getRowNum(self, roiNum):
-        if isinstance(self.labelDict, ndLibrary):
+        if isinstance(self.labelDict, type(self)):
             return self.labelDict.getRowNum(roiNum)
         if roiNum in self.labelDict:
             return self.labelDict[roiNum][4]
@@ -626,7 +634,7 @@ class ndLibrary:
     ## From the row number of the table of label colors, find the associated region number of a label
     ## Mostly used for InteractiveLabelSelector
     def getRegionNum(self, countNum):
-        if isinstance(self.labelDict, ndLibrary):
+        if isinstance(self.labelDict, type(self)):
             return self.labelDict.getRegionNum(countNum)
         if self.labelDict is None:
             return None
