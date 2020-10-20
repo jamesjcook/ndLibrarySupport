@@ -17,10 +17,16 @@ class volumeDropdown(qt.QComboBox):
         self.nodeTag = nodeTag
         qtLayout = slicer.app.layoutManager().sliceWidget(nodeTag).layout()
         qtLayout.addWidget(self)
+        self.addItem(r"<Select Data Package>")
         self.libDict = dict()
         self.activated.connect(self.changeVolume)
         if library is not None:
             self.setupLibrary(library)
+        #self.loadSignal = qt.QTimer()
+        #self.loadSignal.timeout.connect(self.busySpinner)
+        #self.loadSigA = r"|/-\\"
+        #self.loadSigI = 0
+        self.statusMessage = ""
     
     ## Function that will change the volume image being looked at
     ## Because of how the dropdown menu is set up, any entry in volDict should at least have a file path
@@ -31,22 +37,41 @@ class volumeDropdown(qt.QComboBox):
         name = self.itemText(index)
         #print(name)
         #print(self.libDict[name])
+        if name not in self.libDict:
+            return
         compString = "vtkMRMLSliceCompositeNode"+str(self.nodeTag)
         sliceString = "vtkMRMLSliceNode"+str(self.nodeTag)
         compNode = slicer.app.mrmlScene().GetNodeByID(compString)
+        self.statusMessage = "loading "+name+" ..."
+        slicer.util.showStatusMessage(self.statusMessage)
+        self.setItemText(index,self.statusMessage)
+        #self.loadSignal.start(250)
         volNode = self.libDict[name].get_volume_node(name)
         if volNode is not None:
             compNode.SetBackgroundVolumeID(volNode.GetID())
+            self.statusMessage = ""
+            self.setItemText(index,name)
+        else:
+            self.statusMessage=name+ " Error loading"
+            self.setItemText(index,self.statusMessage)
+        slicer.util.showStatusMessage(self.statusMessage)
         if self.libDict[name].getLabelVolume() is not None:
             compNode.SetReferenceLabelVolumeID(self.libDict[name].getLabelVolume().GetID())
+        #killtimer?
+        #self.loadSignal.stop()
         slicer.app.layoutManager().resetSliceViews()
-    
+    # interface is DISABLED while loading so this is not possible
+    #def busySpinner(self):
+    #    self.loadSigI += 1
+    #    self.loadSigI = self.loadSigI % len(self.loadSigA)
+    #    slicer.util.showStatusMessage(self.statusMessage + " " +self.loadSigA[self.loadSigI])
     ## Function that will set up the volumes from a particular ndLibrary for the dropdown menu
     def setupLibrary(self, library):
         if not isinstance(library, ndLibrary):
             print("Not a library")
             return
         self.clear()
+        self.addItem(r"<Please Select Data>")
         volset = library.getEntireVolumeSet().copy()
         if library.vol_ordering in library.fields:
             sorting = library.fields[library.vol_ordering].split(',')
