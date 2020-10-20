@@ -1,11 +1,13 @@
-## lib.conf loader/saver/handler 
+## lib.conf loader/saver/handler
+## sub classing dict for super special funtime behavior.
+## we have a few extra fields, which we may not use outside the class which
+## record meta bits.
 import os
 import re
 
-class conf:
+class conf(dict):
     def __init__(self,conf_path,conf_name="lib.conf"):
-        # fields is the name ready to use fields
-        self.fields=dict()
+        #super(dict, self).__init__()
         # comments will be line num : comment
         self.comments=dict()
         # lines will be line num : field key
@@ -41,7 +43,7 @@ class conf:
                 if key is not None and key.strip():# and value is not None:
                     if value is None:
                         value=""
-                    self.fields[key.strip()] = value.strip()
+                    self[key.strip()] = value.strip()
                     self.lines[cnt] = key.strip()
                 elif (key is None or not key) and (value is None or not value):
                     #print("Ignore line:"+line.strip())
@@ -56,28 +58,32 @@ class conf:
                 if comment is not None:
                     self.comments[cnt] = comment
         # clean up routine typeo, except its so pervasive... 
-        #if self.pattern_field not in self.fields and "FileAbrevPattern" in self.fields:
+        #if self.pattern_field not in self and "FileAbrevPattern" in self:
         #    self.pattern_field = "FileAbrevPattern"
-        #    self.fields[self.pattern_field]=
-        #if self.match_field not in self.fields and "FileAbbrevMatch" in self.fields:
+        #    self[self.pattern_field]=
+        #if self.match_field not in self and "FileAbbrevMatch" in self:
         #    self.match_field = "FileAbrevMatch"
-        self.path = file
     ## print conf
     def print(self,indent=""):
-        for e in self.fields:
-            print(indent+"\t"+e+"\t= "+self.fields[e])
+        for e in self:
+            print(indent+"\t"+e+"\t= "+self[e])
     ## save conf
     def save(self,out_path=None):
-        if os.path.isdir(out_path):
+        if out_path and os.path.isdir(out_path):
             #print("Given dir, add name")
             out_path=os.path.join(out_path,"lib.conf")
-        if out_path is None or os.path.isfile(out_path):
+        else:
+            print("Write disabled, switch to print")
+            out_path = None
+        #if out_path is None or os.path.isfile(out_path):
+        if out_path and os.path.isfile(out_path):
             print('Conf overwrite disabled for now');
             #out_path=self.conf_path
             return
-        fp = open(out_path,"w")
-        fields=self.fields.copy()
-        #for e in self.fields:
+        if out_path is not None:
+            fp = open(out_path,"w")
+        fields=self.copy()
+        #for e in self:
         for i in range(0,self.lineCount):
             data=""
             comment=""
@@ -90,7 +96,10 @@ class conf:
             #print(str(i)+":"+line)
             #print(line)
             if not line == "":
-                fp.write(line+"\n")
+                if out_path is not None:
+                    fp.write(line+"\n")
+                else:
+                    print(line)
         for e in fields:
             line=""
             if not e == "":
@@ -98,4 +107,8 @@ class conf:
             if not fields[e] == "":
                 line=line+fields[e]
             #print(line)
-            fp.write(line+"\n")
+            if out_path is not None:
+                fp.write(line+"\n")
+            else:
+                print(line)
+
