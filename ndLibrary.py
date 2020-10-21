@@ -153,17 +153,18 @@ class ndLibrary:
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
         else:
-            self.logger.info("Lib very promiscuous: "+self.file_loc)
+            self.logger.info("Lib very promiscuous: "+self.conf_dir)
             filter = ".*"
         self.jumpToDir()
-        for entry in os.listdir(os.getcwd()):
-            print(os.path.join(self.file_loc, entry))
-            self.jumpToDir()
-            if os.path.isdir(os.path.join(os.getcwd(), entry)) and re.match(r''+filter, entry):
-                child_lib = ndLibrary(self, os.path.join(os.getcwd(), entry))
+        neighborhood = os.getcwd()
+        for entry in os.listdir(neighborhood):
+            #self.jumpToDir()
+            if os.path.isdir(os.path.join(neighborhood, entry)) and re.match(r''+filter, entry):
+                child_lib = ndLibrary(self, os.path.join(neighborhood, entry))
                 child_lib.loadEntire()
                 if child_lib.isValid():
                     self.children.append(child_lib)
+                    #print(os.path.join(self.conf_dir, entry))
         if len(self.children) == 0:
             self.is_leaf = True
     
