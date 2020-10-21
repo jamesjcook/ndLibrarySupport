@@ -6,7 +6,11 @@ import os
 import re
 
 class conf(dict):
-    def __init__(self,conf_path,conf_name="lib.conf"):
+    def __init__(self,conf_path,conf_name="lib.conf", existing_conf = None):
+        if existing_conf is not None:
+            for f in existing_conf:
+                    self[f]=existing_conf[f]
+        #    self=existing_conf.copy()
         #super(dict, self).__init__()
         # comments will be line num : comment
         self.comments=dict()
@@ -24,11 +28,11 @@ class conf(dict):
             self.conf_dir=conf_path
             self.conf_name=conf_name
         if os.path.isfile(self.conf_path):
-            self.load(self.conf_path)
+            self.load(self.conf_path)#, existing_conf)
         else:
             print("New empty conf for "+self.conf_path)
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
-    def load(self, file=None):
+    def load(self, file=None):#, existing_conf = None):
         if file is None:
             file=self.conf_path
         with open(file) as fp:
@@ -57,6 +61,10 @@ class conf(dict):
                     print("conf error: bad value, key is "+key.strip())
                 if comment is not None:
                     self.comments[cnt] = comment
+        #if  existing_conf is not None:
+        #    for f in existing_conf:
+        #        if f not in self:
+        #            self[f]=existing_conf
         # clean up routine typeo, except its so pervasive... 
         #if self.pattern_field not in self and "FileAbrevPattern" in self:
         #    self.pattern_field = "FileAbrevPattern"

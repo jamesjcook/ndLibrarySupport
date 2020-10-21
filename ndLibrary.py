@@ -56,7 +56,7 @@ class ndLibrary:
             if self.path_field in self.conf:
                 del self.conf[self.path_field]
         elif parent is None:
-            #self.conf = ndLibrarySupport.conf()
+            self.conf = ndLibrarySupport.conf("blank")
             pass
         else:
             print("Parent is invalid")
@@ -157,7 +157,7 @@ class ndLibrary:
             filter = ".*"
         self.jumpToDir()
         for entry in os.listdir(os.getcwd()):
-            #print(os.path.join(self.file_loc, entry))
+            print(os.path.join(self.file_loc, entry))
             self.jumpToDir()
             if os.path.isdir(os.path.join(os.getcwd(), entry)) and re.match(r''+filter, entry):
                 child_lib = ndLibrary(self, os.path.join(os.getcwd(), entry))
@@ -177,8 +177,9 @@ class ndLibrary:
             #before we subclassed dict
             #self.conf=ndLibrarySupport.conf(conf_path)
             #self.conf=self.conf.fields.copy()
-            self.conf=ndLibrarySupport.conf(conf_path)
-            self.conf_path=conf_path
+            par_conf=self.conf.copy()
+            self.conf = ndLibrarySupport.conf(conf_path,self.conf_file_name,par_conf)
+            self.conf_path = conf_path
             #self.loadConf(conf_path)
             self.determineRelevance()
             if not self.valid:
@@ -240,7 +241,7 @@ class ndLibrary:
         return ancestors
     
     ## print conf
-    def printConf(self):
+    def print_conf(self):
         for e in self.conf:
             print("\t"+e+"\t= "+self.conf[e])
     ## print the tree below our location
