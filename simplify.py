@@ -56,12 +56,13 @@ class simplify:
     
     def run_jobs(self):
         for job in self.jobs:
+            print(job[0])
             if "process" in job[0]:
-                self.process_child_lib(job[1],job[2])
+                #self.process_child_lib(job[1],job[2])
             elif "save" in job[0]:
                 self.save_conf(job[1],job[2])
             else:
-                print("UNKNOWN job op"+job[0])
+                print("\tUNKNOWN job op")
     
     def save_conf(self,lib,dest):
         conf=lib.conf
@@ -73,22 +74,38 @@ class simplify:
     def process_child_lib(self, lib, new_location):
         if not os.path.isdir(new_location):
             os.mkdir(new_location)
-        label_dir=os.path.join(new_location, "labels")
-        if not os.path.isdir(label_dir):
-            os.mkdir(label_dir)
-        vol_set = lib.getEntireVolumeSet()
-        label_vol = lib.labelVolume
-        ref_lib = lib
         ## Assumes Strain and LibName fields exist for lib.conf file for a lib
         category_txt=""
         if "Strain" in lib.conf:
           category = lib.conf["Strain"]
           category_txt=category+"_"
-        libname = lib.conf["LibName"]
+        lib_name = lib.conf["LibName"]
+        vol_set = lib.getEntireVolumeSet()
+        ## copy_vol_set replaced by load/harden/save in line loop.
+        #self.copy_vol_set(lib,vol_set,new_location,category_txt,lib_name)
+        tform_logic = slicer.vtkSlicerTransformLogic()
+        # do not compress output
+        properties = {'useCompression': 0}
+        for vol in vol_set:
+            ## Load volume
+            print("get volume node "+vol)
+            #vol_node=lib.get_volume_node(vol)
+            print("\tharden tform")
+            #tform_logic.hardenTransform(vol_node)
+            vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr"
+            print("\tsave "+vol_dest)
+            #slicer.util.saveNode(vol_node,vol_dest, properties)
+        ref_lib = lib
+        label_vol = lib.labelVolume
+        label_dir=os.path.join(new_location, "labels")
+        if not os.path.isdir(label_dir):
+            os.mkdir(label_dir)
+        #self.copy_label_vol(ref_lib,label_vol)
+        #self.copy_color_table(lib)
         #shutil.copy(os.path.join(lib.file_loc, "lib.conf"), os.path.join(new_location, "lib.conf"))
-        self.copy_label_vol(ref_lib,label_vol)
-        self.copy_color_table(lib)
-        self.copy_vol_set(lib,vol_set,new_location,category_txt,lib_name)
+        lib.conf[lib.recursion_field] = "true"
+        self.save_conf(lib,new_location)
+        
     def copy_label_vol(self,ref_lib,label_vol):
         if label_vol is not None:
             if isinstance(label_vol, ndLibrary):
@@ -109,7 +126,7 @@ class simplify:
                     label_volName = match.group(0)
             if not os.path.isdir(label_dir):
                 os.mkdir(label_dir)
-            newlabel_vol = os.path.join(label_dir, category_txt+libname+"_"+label_volName+".nii.gz")
+            newlabel_vol = os.path.join(label_dir, category_txt+lib_name+"_"+label_volName+".nii.gz")
             newLabelTransform = os.path.join(label_dir, labelTransformName)
             #print(newlabel_vol)
             shutil.copy(os.path.join(ref_lib.file_loc, "lib.conf"), os.path.join(label_dir, "lib.conf"))
@@ -132,7 +149,7 @@ class simplify:
                     colorTableName = match.group(2)
                 elif match:
                     colorTableName = match.group(0)
-            newColorTable = os.path.join(label_dir, category_txt+libname+"_"+colorTableName+"_lookup.txt")
+            newColorTable = os.path.join(label_dir, category_txt+lib_name+"_"+colorTableName+"_lookup.txt")
             #print(newColorTable)
             shutil.copy(colorTableFile, newColorTable)
         #if "originTransform" in lib:
@@ -140,14 +157,14 @@ class simplify:
         try:
             originTransform = lib.originTransform[0]
             #print(originTransform)
-            #print(os.path.join(new_location, category_txt+libname+"_"+originTransform.split("\\")[-1]))
+            #print(os.path.join(new_location, category_txt+lib_name+"_"+originTransform.split("\\")[-1]))
             shutil.copy(originTransform, os.path.join(new_location, originTransform.split("\\")[-1]))
         except:
             print("No OriginTransform")
     def copy_vol_set(lib,vol_set,new_location,category_txt,lib_name):
         for volKey in vol_set:
-            #print(os.path.join(new_location, category_txt+libname+"_"+volKey+".nii.gz"))
-            shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+libname+"_"+volKey+".nii.gz"))
+            #print(os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
+            shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
 
 #avg = ndLibrary(None, r"D:\Libraries\010Rat_Brain\v2020-06-25\23Rat")
 #single = ndLibrary(None, r"D:\Libraries\010Rat_Brain\v2020-06-25\21Rat")
