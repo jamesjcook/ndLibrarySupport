@@ -12,7 +12,7 @@ class ndLibrary:
     ## Constructor for a ndLibrary
     ## parent: The parent ndLibrary
     ## file_loc: The full path of the ndLibrary
-    ## fields: A dictionary populated with name-value pairs found in lib.conf
+    ## conf: A dictionary populated with name-value pairs found in lib.conf
     ## recursion_field: String used to identify uses of recursion
     ## conf_file_name: String that stores the default name of a conf file (lib.conf)
     ## labelDict: A dictionary populated with the labels found in a lookup table file
@@ -41,7 +41,7 @@ class ndLibrary:
         self.conf_path = None
         # TODO: adjust all the special field handlers to be simply read from the field.
         #       Perhaps they should be accessors? 
-        #       Or we should craft a special operator to get access to fields?
+        #       Or we should craft a special operator to get access to conf?
         self.recursion_field = "RecursiveLoad"
         self.path_field = "Path"
         # filter child/vol discovery 
@@ -52,11 +52,11 @@ class ndLibrary:
         self.match_field = "FileAbrevMatch"
         self.vol_ordering = "PreferedImgTypeAbbrevOrder"
         if isinstance(parent, type(self)):
-            self.fields = parent.fields.copy()
-            if self.path_field in self.fields:
-                del self.fields[self.path_field]
+            self.conf = parent.conf.copy()
+            if self.path_field in self.conf:
+                del self.conf[self.path_field]
         elif parent is None:
-            #self.fields = ndLibrarySupport.conf()
+            #self.conf = ndLibrarySupport.conf()
             pass
         else:
             print("Parent is invalid")
@@ -74,10 +74,10 @@ class ndLibrary:
         self.colorTable = None
         self.originTransform = None
         self.relevantStrainLib = False
-        #if self.pattern_field in self.fields:
-        #    del self.fields[self.pattern_field]
-        #if self.match_field in self.fields:
-        #    del self.fields[self.match_field]
+        #if self.pattern_field in self.conf:
+        #    del self.conf[self.pattern_field]
+        #if self.match_field in self.conf:
+        #    del self.conf[self.match_field]
         self.extensionPriority = list(["nhdr", "nrrd", "nii.gz", "nii", "png", "tif", "jpg", "gif", "bmp"])
         self.extReg = r".+[.]"+'(% s)' % '|'.join([sub.replace('.', '[.]') for sub in self.extensionPriority])+"$"
         ## Have ndLibrary automatically build the ndLibrary tree if it is a root?
@@ -109,7 +109,7 @@ class ndLibrary:
             if len(components) == 2 and is_comment == False:
                 name = components[0]
                 value = components[1].replace("\n", "")
-                self.fields[name] = value
+                self.conf[name] = value
             line = conf.readline()
 
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
@@ -124,7 +124,7 @@ class ndLibrary:
                 value=components.group(2)
                 comment=components.group(3)
                 if key is not None and value is not None:
-                    self.fields[key.strip()] = value.strip()
+                    self.conf[key.strip()] = value.strip()
                 elif (key is None or not key) and (value is None or not value):
                     #print("Ignore line:"+line.strip())
                     pass
@@ -133,25 +133,25 @@ class ndLibrary:
                 elif value is None:
                     print("conf error: bad value, key is "+key.strip())
         # clean up routine typeo, except its so pervasive... 
-        #if self.pattern_field not in self.fields and "FileAbrevPattern" in self.fields:
+        #if self.pattern_field not in self.conf and "FileAbrevPattern" in self.conf:
         #    self.pattern_field = "FileAbrevPattern"
-        #    self.fields[self.pattern_field]=
-        #if self.match_field not in self.fields and "FileAbbrevMatch" in self.fields:
+        #    self.conf[self.pattern_field]=
+        #if self.match_field not in self.conf and "FileAbbrevMatch" in self.conf:
         #    self.match_field = "FileAbrevMatch"
         self.conf_path = file
 
     ## Method to find and make child ndLibraries
     def buildChildren(self):
-        if self.recursion_field in self.fields and self.fields[self.recursion_field] == "false":
+        if self.recursion_field in self.conf and self.conf[self.recursion_field] == "false":
             #print("Reached leaf of tree. No children")
             self.is_leaf = True
             return
-        #if (self.recursion_field in self.fields and self.fields[self.recursion_field] == "true"
-        #    and self.path_field in self.fields and os.path.isdir(self.fields[self.path_field])):        
-        #        #print("Going on another path: {}".format(self.fields[self.path_field]))
-        #        os.chdir(self.fields[self.path_field])
-        if self.filter_field in self.fields:
-            filter = self.fields[self.filter_field]
+        #if (self.recursion_field in self.conf and self.conf[self.recursion_field] == "true"
+        #    and self.path_field in self.conf and os.path.isdir(self.conf[self.path_field])):        
+        #        #print("Going on another path: {}".format(self.conf[self.path_field]))
+        #        os.chdir(self.conf[self.path_field])
+        if self.filter_field in self.conf:
+            filter = self.conf[self.filter_field]
         else:
             self.logger.info("Lib very promiscuous: "+self.file_loc)
             filter = ".*"
@@ -176,8 +176,8 @@ class ndLibrary:
             #print(self.conf_dir)
             #before we subclassed dict
             #self.conf=ndLibrarySupport.conf(conf_path)
-            #self.fields=self.conf.fields.copy()
-            self.fields=ndLibrarySupport.conf(conf_path)
+            #self.conf=self.conf.fields.copy()
+            self.conf=ndLibrarySupport.conf(conf_path)
             self.conf_path=conf_path
             #self.loadConf(conf_path)
             self.determineRelevance()
@@ -204,11 +204,11 @@ class ndLibrary:
     ## Meant to be called after loading lib.conf file when building the entire tree
     ## May get incorrect result if used in other circumstances
     def determineRelevance(self):
-        if "TestingLib" in self.fields and self.fields["TestingLib"].lower() == "true":
+        if "TestingLib" in self.conf and self.conf["TestingLib"].lower() == "true":
             self.relevantStrainLib = False
             self.valid = False
-        elif "Category" in self.fields and self.fields["Category"] == "Species":
-            #and "Strain" in self.fields):
+        elif "Category" in self.conf and self.conf["Category"] == "Species":
+            #and "Strain" in self.conf):
             self.relevantStrainLib = True
         #print("{} is {}".format(self.file_loc, self.relevantStrainLib))
     
@@ -216,9 +216,9 @@ class ndLibrary:
     ## By default, the function will change the working directory to the ndLibrary's directory
     def jumpToDir(self):
         os.chdir(self.conf_dir)
-        #if self.fields.has_key(self.path_field):
-        if self.path_field in self.fields:
-            relativePath = self.fields[self.path_field].replace("/","\\")
+        #if self.conf.has_key(self.path_field):
+        if self.path_field in self.conf:
+            relativePath = self.conf[self.path_field].replace("/","\\")
             if os.path.isdir(relativePath):
                 os.chdir(relativePath)
                 #print("Jumping to {}".format(os.getcwd()))
@@ -241,8 +241,8 @@ class ndLibrary:
     
     ## print conf
     def printConf(self):
-        for e in self.fields:
-            print("\t"+e+"\t= "+self.fields[e])
+        for e in self.conf:
+            print("\t"+e+"\t= "+self.conf[e])
     ## print the tree below our location
     def printTree(self,indent=None):
         if indent is None:
@@ -280,18 +280,18 @@ class ndLibrary:
         #print("Loading volumes for {}".format(self.file_loc))
         self.jumpToDir()
         #print("\t"+os.getcwd())
-        if self.filter_field in self.fields:
-            filter = self.fields[self.filter_field]
+        if self.filter_field in self.conf:
+            filter = self.conf[self.filter_field]
         else:
             self.logger.info("Lib very permissive: "+self.file_loc)
             filter = ".*"
-        if self.pattern_field in self.fields:
-            pattern=self.fields[self.pattern_field]
+        if self.pattern_field in self.conf:
+            pattern=self.conf[self.pattern_field]
         else:
             pattern="(.*)"
         ## the repPattern is not used directly, so its okay to garble it here.
-        if self.match_field in self.fields:
-            repPattern=" and "+self.fields[self.match_field]
+        if self.match_field in self.conf:
+            repPattern=" and "+self.conf[self.match_field]
         else:
             repPattern = ""
         try:
@@ -318,8 +318,8 @@ class ndLibrary:
             #fileName = libEntries[i].split(".")[0]
             libName = libEntries[i].replace(r"."+ext,"")
             #libName = libEntries[i]
-            if self.match_field in self.fields:
-                match_text=self.fields[self.match_field]
+            if self.match_field in self.conf:
+                match_text=self.conf[self.match_field]
             else:
                 match_text=r"\1"
             #match = re.search(pattern, libName)
@@ -349,9 +349,9 @@ class ndLibrary:
     ## Helper function that handles how a determined path and key are added to the volDict
     def addToVolDict(self, volPath, key):
         ## Check if another name is wanted according to the lib.conf file
-        if "LibNameSubstitution" in self.fields and self.fields["LibNameSubstitution"].lower() == "true":
-            if key in self.fields:
-                key = self.fields[key]
+        if "LibNameSubstitution" in self.conf and self.conf["LibNameSubstitution"].lower() == "true":
+            if key in self.conf:
+                key = self.conf[key]
         ## Compare the file extensions if there are conflicting keys
         #if key in self.volDict:
         #    currentExt = self.volDict[key][0].split(".", 1)[-1]
@@ -375,8 +375,8 @@ class ndLibrary:
             return
         labelPat = r".*[._-]labels[._-].*"
         lookupPat = ".*_lookup[.](?:txt|ctbl)"
-        if self.filter_field in self.fields:
-            filter = self.fields[self.filter_field]
+        if self.filter_field in self.conf:
+            filter = self.conf[self.filter_field]
         else:
             filter=r".*"
             #print("No files to be found")
@@ -453,14 +453,14 @@ class ndLibrary:
     ## Element 0 is the file path for the transform
     ## Element 1 is the transform node in 3D Slicer
     def loadOriginTransform(self):
-        if not "OriginTransform" in self.fields:
+        if not "OriginTransform" in self.conf:
             #print("No path to follow for origin transform")
             return
         if self.originTransform is not None:
             #print("Track transform is already loaded")
             return
         self.jumpToDir()
-        originPath = self.fields["OriginTransform"].replace("/","\\")
+        originPath = self.conf["OriginTransform"].replace("/","\\")
         if os.path.isfile(originPath):
             # fully resolve the originPath so we can find by path.
             relD=os.path.dirname(originPath)
@@ -474,7 +474,7 @@ class ndLibrary:
                 #ot=self.getOriginTransform()
             else:
                 self.jumpToDir()
-                print("error resolving "+self.fields["OriginTransform"]+" in "+os.getcwd()+" for lib "+self.conf_dir)
+                print("error resolving "+self.conf["OriginTransform"]+" in "+os.getcwd()+" for lib "+self.conf_dir)
             #if self.parent is not None and self.parent.originTransform is not None and self.parent.originTransform[1] is not None:
             #    ot.SetAndObserveTransformNodeID(self.parent.originTransform[1].GetID())
         else:
@@ -528,9 +528,9 @@ class ndLibrary:
         if volNode is None:
             #slicer.util.showStatusMessage("loading "+key+" ...")
             ctblKey="ColorTable_"+key
-            if ctblKey in self.fields:
-                ctbl=os.path.join(os.path.dirname(self.volDict[key][0]),self.fields[ctblKey])
-                print("custom color table:"+self.fields[ctblKey]+" for "+key)
+            if ctblKey in self.conf:
+                ctbl=os.path.join(os.path.dirname(self.volDict[key][0]),self.conf[ctblKey])
+                print("custom color table:"+self.conf[ctblKey]+" for "+key)
             else:
                 ctbl = None
             if (sys.version_info > (3, 0)):

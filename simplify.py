@@ -16,7 +16,8 @@ class simplify:
             self.lib.loadEntire()
         else:
             self.lib = lib
-            
+        if Path in lib.conf:
+            del lib.conf.Path
         return
         ### un-converted code from the move files version
     def processSubLib(self, lib, new_location):
@@ -25,10 +26,10 @@ class simplify:
         labelVolume = lib.labelVolume
         ref_lib = lib
         category_txt=""
-        if "Strain" in lib.fields:
-          category = lib.fields["Strain"]
+        if "Strain" in lib.conf:
+          category = lib.conf["Strain"]
           category_txt=category+"_"
-        libname = lib.fields["LibName"]
+        libname = lib.conf["LibName"]
         if not os.path.isdir(new_location):
             os.mkdir(new_location)
         shutil.copy(os.path.join(lib.file_loc, "lib.conf"), os.path.join(new_location, "lib.conf"))
@@ -43,9 +44,9 @@ class simplify:
             labelTransformName = labelTransform.split("\\")[-1]
             #print(labelVolumeFile)
             #print(labelVolumeName)
-            #if ref_lib.fields.has_key("FileAbrevPattern"):
-            if "FileAbrevPattern" in ref_lib.fields:
-                match = re.search(ref_lib.fields["FileAbrevPattern"], labelVolumeName)
+            #if ref_lib.conf.has_key("FileAbrevPattern"):
+            if "FileAbrevPattern" in ref_lib.conf:
+                match = re.search(ref_lib.conf["FileAbrevPattern"], labelVolumeName)
                 if match and len(match.groups())>1:
                     labelVolumeName = match.group(2)
                 elif match:
@@ -67,9 +68,9 @@ class simplify:
             colorTableName = colorTableName.split(".")[0]
             #print(colorTableFile)
             #print(colorTableName)
-            #if ref_lib.fields.has_key("FileAbrevPattern"):
-            if "FileAbrevPattern" in ref_lib.fields:
-                match = re.search(ref_lib.fields["FileAbrevPattern"], colorTableName)
+            #if ref_lib.conf.has_key("FileAbrevPattern"):
+            if "FileAbrevPattern" in ref_lib.conf:
+                match = re.search(ref_lib.conf["FileAbrevPattern"], colorTableName)
                 if match and len(match.groups())>1:
                     colorTableName = match.group(2)
                 elif match:

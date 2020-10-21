@@ -96,8 +96,8 @@ class volumeDropdown(qt.QComboBox):
         self.clear()
         self.addItem(r"<Please Select Data>")
         volset = library.getEntireVolumeSet().copy()
-        if library.vol_ordering in library.fields:
-            sorting = library.fields[library.vol_ordering].split(',')
+        if library.vol_ordering in library.conf:
+            sorting = library.conf[library.vol_ordering].split(',')
             #print("use sorting")
         else:
             sorting = None
