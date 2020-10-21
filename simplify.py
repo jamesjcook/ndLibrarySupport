@@ -86,6 +86,10 @@ class simplify:
           category_txt=category+"_"
         libname = lib.conf["LibName"]
         #shutil.copy(os.path.join(lib.file_loc, "lib.conf"), os.path.join(new_location, "lib.conf"))
+        self.copy_label_vol(ref_lib,label_vol)
+        self.copy_color_table(lib)
+        self.copy_vol_set(lib,vol_set,new_location,category_txt,lib_name)
+    def copy_label_vol(self,ref_lib,label_vol):
         if label_vol is not None:
             if isinstance(label_vol, ndLibrary):
                 ref_lib = label_vol
@@ -111,6 +115,7 @@ class simplify:
             shutil.copy(os.path.join(ref_lib.file_loc, "lib.conf"), os.path.join(label_dir, "lib.conf"))
             shutil.copy(label_volFile, newlabel_vol)
             shutil.copy(labelTransform, newLabelTransform)
+    def copy_color_table(self,lib):
         colorTable = lib.colorTable
         if colorTable is not None:
             if isinstance(colorTable, ndLibrary):
@@ -131,6 +136,7 @@ class simplify:
             #print(newColorTable)
             shutil.copy(colorTableFile, newColorTable)
         #if "originTransform" in lib:
+    def copy_origin_transform(lib):
         try:
             originTransform = lib.originTransform[0]
             #print(originTransform)
@@ -138,6 +144,7 @@ class simplify:
             shutil.copy(originTransform, os.path.join(new_location, originTransform.split("\\")[-1]))
         except:
             print("No OriginTransform")
+    def copy_vol_set(lib,vol_set,new_location,category_txt,lib_name):
         for volKey in vol_set:
             #print(os.path.join(new_location, category_txt+libname+"_"+volKey+".nii.gz"))
             shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+libname+"_"+volKey+".nii.gz"))
