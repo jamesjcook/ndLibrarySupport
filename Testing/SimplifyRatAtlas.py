@@ -28,10 +28,11 @@ simplify_job.run()
 ## load test the auto-resolved master collection
 #import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\SimplifiedDistributions\DataIndex_Rat_Brain_v2020-10-16")
 ## load test prescribed name collection
+"""
 import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(dest_lib)
-
+"""
 
 # code syntax check line for copy paste fun while in development
 # (due to inexperience) no-re-set and re-run while in same session
 # must start fresh... i believe that is due to import, but I dont know things.
-exec(open(os.path.join(ndLibrarySupport.codePath,"simplify.py")).read())
+# exec(open(os.path.join(ndLibrarySupport.codePath,"simplify.py")).read())
