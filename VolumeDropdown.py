@@ -107,7 +107,7 @@ class volumeDropdown(qt.QComboBox):
                     #print("insert "+key)
                     self.addItem(key)
                     if isinstance(volset[key], ndLibrary):
-                        print("key using sublib")
+                        #print("key using sublib")
                         self.libDict[key] = volset[key]
                     else:
                         self.libDict[key] = library
