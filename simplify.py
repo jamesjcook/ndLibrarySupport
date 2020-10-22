@@ -21,11 +21,14 @@ class simplify:
         if auto_output:
             out_lib = self.name_resolve()
             new_location = os.path.join(new_location,out_lib)
+        if not os.path.isdir(new_location):
+            self.jobs.append(["mkdir "+os.path.basename(new_location),new_location])
         for child in self.lib.children:
             ident = self.name_resolve(child)
             self.jobs.append(["process "+ident,child,os.path.join(new_location,ident)])
             #child_location=
             #simplify(child,
+        self.lib.conf[self.lib.filter_field]=".*"
         self.jobs.append(["save "+self.lib.conf.conf_path+" -> "+new_location,self.lib, new_location])
         #self.lib.conf.save(new_location)
         return
@@ -54,11 +57,13 @@ class simplify:
         for job in self.jobs:
             print(job[0])
     
-    def run_jobs(self):
+    def run(self,test_mode=False):
         for job in self.jobs:
             print(job[0])
-            if "process" in job[0]:
-                #self.process_child_lib(job[1],job[2])
+            if "mkdir" in job[0]:
+                os.mkdir(job[1])
+            elif "process" in job[0]:
+                self.process_child_lib(job[1],job[2],test_mode)
             elif "save" in job[0]:
                 self.save_conf(job[1],job[2])
             else:
@@ -66,19 +71,28 @@ class simplify:
     
     def save_conf(self,lib,dest):
         conf=lib.conf
-        if "Path" in conf:
-            del conf["Path"]
+        conf.comments.clear()
+        key = "Path"
+        if key in conf:
+            conf["#"+key]= conf[key]
+            del conf[key]
+        key = "OriginTransform"
+        if key in conf:
+            conf["#"+key]= conf[key]
+            del conf[key]
         conf.save(dest)
     
     ### un-converted code from the move files version
-    def process_child_lib(self, lib, new_location):
+    def process_child_lib(self, lib, new_location, test_mode=False):
         if not os.path.isdir(new_location):
             os.mkdir(new_location)
         ## Assumes Strain and LibName fields exist for lib.conf file for a lib
         category_txt=""
-        if "Strain" in lib.conf:
-          category = lib.conf["Strain"]
-          category_txt=category+"_"
+        category = lib.conf["Category"]
+        if category in lib.conf:
+            category_text = lib.conf[category] + "_"
+        else:
+            category_text = category + "_"
         lib_name = lib.conf["LibName"]
         vol_set = lib.getEntireVolumeSet()
         ## copy_vol_set replaced by load/harden/save in line loop.
@@ -87,72 +101,89 @@ class simplify:
         # do not compress output
         properties = {'useCompression': 0}
         for vol in vol_set:
-            ## Load volume
-            print("get volume node "+vol)
-            #vol_node=lib.get_volume_node(vol)
+            ## custom color table support
+            ctblKey="ColorTable_"+vol
+            if ctblKey in vol_set[vol].conf:
+                ctbl=os.path.join(vol_set[vol].Path,vol_set[vol].conf[ctblKey])
+                print("custom color table:"+vol_set[vol].conf[ctblKey]+" for "+vol)
+                if ctblKey not in lib.conf:
+                    lib.conf[ctblKey] = os.path.basename(ctbl)
+                    ctbl_dest = shutil.copy(ctbl, os.path.join(new_location, lib.conf[ctblKey]))
+            else:
+                ctbl = None
+            #if ctbl is not None:
+            #    volNode.GetDisplayNode().SetAndObserveColorNodeID(ctbl.GetID())
+            #vol_dest = os.path.join(new_location,category_text+lib_name+"_"+vol+".nhdr")
+            vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr")
+            if os.path.isfile(vol_dest):
+                print("previously completed "+vol)
+                continue
+            print("load/find volume node "+vol)
+            vol_node=lib.get_volume_node(vol)
             print("\tharden tform")
-            #tform_logic.hardenTransform(vol_node)
-            vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr"
+            tform_logic.hardenTransform(vol_node)
             print("\tsave "+vol_dest)
-            #slicer.util.saveNode(vol_node,vol_dest, properties)
-        ref_lib = lib
-        label_vol = lib.labelVolume
+            slicer.util.saveNode(vol_node,vol_dest, properties)
+            # in tesitng just do 1
+            if test_mode:
+                break;
         label_dir=os.path.join(new_location, "labels")
-        if not os.path.isdir(label_dir):
-            os.mkdir(label_dir)
-        #self.copy_label_vol(ref_lib,label_vol)
-        #self.copy_color_table(lib)
-        #shutil.copy(os.path.join(lib.file_loc, "lib.conf"), os.path.join(new_location, "lib.conf"))
+        self.copy_label_vol(lib,label_dir)
+        self.copy_color_table(lib,label_dir)
+        self.save_label_conf(lib,label_dir)
+        ##
+        ## UPDATE filter, pattern, match fields
+        ##
         lib.conf[lib.recursion_field] = "true"
+        lib.conf[lib.filter_field] = lib_name+".*|labels"
+        sep="|"
+        lib.conf[lib.pattern_field] = "(.*?)("+sep.join(vol_set)+"|labels)(.*)"
+        lib.conf[lib.match_field] = r"\2"
         self.save_conf(lib,new_location)
-        
-    def copy_label_vol(self,ref_lib,label_vol):
-        if label_vol is not None:
+    
+    def copy_label_vol(self,lib,new_location):
+        if not os.path.isdir(new_location):
+            os.mkdir(new_location)
+        lib_name = lib.conf["LibName"]
+        vol = "labels"
+        vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr")
+        if os.path.isfile(vol_dest):
+            print("previously completed "+vol)
+            return
+        vol_node = lib.getLabelVolume()
+        label_vol = lib.labelVolume
+        tform_logic = slicer.vtkSlicerTransformLogic()
+        # label compression is delicious
+        properties = {'useCompression': 1}
+        if label_vol is not None :
             if isinstance(label_vol, ndLibrary):
-                ref_lib = label_vol
-            label_volFile = ref_lib.label_vol[0]
-            label_volName = label_volFile.split("\\")[-1]
-            label_volName = label_volName.split(".")[0]
-            labelTransform = ref_lib.originTransform[0]
-            labelTransformName = labelTransform.split("\\")[-1]
-            #print(label_volFile)
-            #print(label_volName)
-            #if ref_lib.conf.has_key("FileAbrevPattern"):
-            if "FileAbrevPattern" in ref_lib.conf:
-                match = re.search(ref_lib.conf["FileAbrevPattern"], label_volName)
-                if match and len(match.groups())>1:
-                    label_volName = match.group(2)
-                elif match:
-                    label_volName = match.group(0)
-            if not os.path.isdir(label_dir):
-                os.mkdir(label_dir)
-            newlabel_vol = os.path.join(label_dir, category_txt+lib_name+"_"+label_volName+".nii.gz")
-            newLabelTransform = os.path.join(label_dir, labelTransformName)
-            #print(newlabel_vol)
-            shutil.copy(os.path.join(ref_lib.file_loc, "lib.conf"), os.path.join(label_dir, "lib.conf"))
-            shutil.copy(label_volFile, newlabel_vol)
-            shutil.copy(labelTransform, newLabelTransform)
-    def copy_color_table(self,lib):
+                lib = label_vol
+            print("load/find volume node "+vol)
+            #vol_node=lib.loadLabels(vol)
+            print("\tharden tform")
+            tform_logic.hardenTransform(vol_node)
+            print("\tsave "+vol_dest)
+            slicer.util.saveNode(vol_node,vol_dest, properties)
+    
+    def copy_color_table(self,lib,new_location):
+        lib_name = lib.conf["LibName"]
+        fname = "labels_lookup"
+        ctbl_dest = os.path.join(new_location,lib_name+"_"+fname+".txt")
+        if os.path.isfile(ctbl_dest):
+            return
         colorTable = lib.colorTable
         if colorTable is not None:
             if isinstance(colorTable, ndLibrary):
-                ref_lib = colorTable
-            colorTableFile = ref_lib.colorTable[0]
-            colorTableName = colorTableFile.split("\\")[-1]
-            colorTableName = colorTableName.split(".")[0]
-            #print(colorTableFile)
-            #print(colorTableName)
-            #if ref_lib.conf.has_key("FileAbrevPattern"):
-            if "FileAbrevPattern" in ref_lib.conf:
-                match = re.search(ref_lib.conf["FileAbrevPattern"], colorTableName)
-                if match and len(match.groups())>1:
-                    colorTableName = match.group(2)
-                elif match:
-                    colorTableName = match.group(0)
-            newColorTable = os.path.join(label_dir, category_txt+lib_name+"_"+colorTableName+"_lookup.txt")
-            #print(newColorTable)
-            shutil.copy(colorTableFile, newColorTable)
-        #if "originTransform" in lib:
+                lib = colorTable
+            colorTableFile = lib.colorTable[0]
+            shutil.copy(colorTableFile, ctbl_dest)
+    
+    def save_label_conf(self,lib,new_location):
+        lib_name = lib.conf["LibName"]
+        while isinstance(lib.labelVolume, ndLibrary):
+            lib = lib.labelVolume
+        self.save_conf(lib,new_location)
+    
     def copy_origin_transform(lib):
         try:
             originTransform = lib.originTransform[0]
