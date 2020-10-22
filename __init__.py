@@ -23,7 +23,7 @@ import slicer
 #def __init__(self,rootDir):
 codePath = os.path.dirname(os.path.abspath(__file__))
 ## Find code and execute it
-print("setup code from "+codePath)
+print("ndLibrarySupport: setup code from "+codePath)
 for file in os.listdir(codePath):
     if '__init__' in file:
         continue
@@ -38,6 +38,7 @@ for file in os.listdir(codePath):
         #spec.loader.exec_module(foo)
         exec(open(os.path.join(codePath, file)).read())
         #print(".")
+        pass
     except:
         print("Code start error in file "+file+" from "+codePath)
         #return
