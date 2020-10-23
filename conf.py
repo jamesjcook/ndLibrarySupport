@@ -2,6 +2,8 @@
 ## sub classing dict for super special funtime behavior.
 ## we have a few extra fields, which we may not use outside the class which
 ## record meta bits.
+from __future__ import print_function
+import sys
 import os
 import re
 
