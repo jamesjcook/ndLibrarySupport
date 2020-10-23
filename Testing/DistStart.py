@@ -2,8 +2,8 @@
 import sys
 import os
 
-TestPath = os.path.dirname(os.path.abspath(__file__))
-dist_root = os.path.dirname(os.path.dirname(os.path.dirname(TestPath)))
+testing_dir = os.path.dirname(os.path.abspath(__file__))
+dist_root = os.path.dirname(os.path.dirname(testing_dir))
 
 sys.path.append(dist_root)
 import ndLibrarySupport
