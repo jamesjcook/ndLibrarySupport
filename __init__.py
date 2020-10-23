@@ -39,7 +39,7 @@ for file in os.listdir(codePath):
         if (sys.version_info > (3, 0)):
             exec(open(os.path.join(codePath, file)).read())
         else:
-            execfile(open(os.path.join(codePath, file)))
+            execfile(os.path.join(codePath, file))
         #print(".")
         pass
     except:
