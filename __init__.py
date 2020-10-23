@@ -36,7 +36,10 @@ for file in os.listdir(codePath):
         #spec = importlib.util.spec_from_file_location(file, os.path.join(codePath, file))
         #foo = importlib.util.module_from_spec(spec)
         #spec.loader.exec_module(foo)
-        exec(open(os.path.join(codePath, file)).read())
+        if (sys.version_info > (3, 0)):
+            exec(open(os.path.join(codePath, file)).read())
+        else:
+            execfile(open(os.path.join(codePath, file)))
         #print(".")
         pass
     except:
