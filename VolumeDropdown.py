@@ -22,6 +22,7 @@ class volumeDropdown(qt.QComboBox):
         self.activated.connect(self.changeVolume)
         if library is not None:
             self.setupLibrary(library)
+            self.library = library
         #self.loadSignal = qt.QTimer()
         #self.loadSignal.timeout.connect(self.busySpinner)
         #self.loadSigA = r"|/-\\"
@@ -69,6 +70,8 @@ class volumeDropdown(qt.QComboBox):
         slicer.util.showStatusMessage(self.statusMessage)
         if self.libDict[name].getLabelVolume() is not None:
             compNode.SetReferenceLabelVolumeID(self.libDict[name].getLabelVolume().GetID())
+        elif self.library.getLabelVolume() is not None:
+            compNode.SetReferenceLabelVolumeID(self.library.getLabelVolume().GetID())
         #killtimer?
         #self.loadSignal.stop()
         if not self.viewSet:
@@ -94,6 +97,7 @@ class volumeDropdown(qt.QComboBox):
             print("Not a library")
             return
         self.clear()
+        self.library = library
         self.addItem(r"<Please Select Data>")
         volset = library.getEntireVolumeSet().copy()
         if library.vol_ordering in library.conf:
