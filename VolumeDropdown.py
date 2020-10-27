@@ -79,9 +79,9 @@ class volumeDropdown(qt.QComboBox):
             sliceWidget = slicer.app.layoutManager().sliceWidget(self.nodeTag)
             sliceWidget.fitSliceToBackground()
             # Avoid starting at midline display for Navigator because of label transformation effects
-            nW=slicer.app.layoutManager().sliceWidget("Nav")
+            nW=slicer.app.layoutManager().sliceWidget("Navigator")
             val=nW.sliceController().sliceOffsetSlider().value
-            #if "Nav" in self.nodeTag:
+            #if "Navigator" in self.nodeTag:
             if abs(val) < 0.250:
                 nW.sliceController().setSliceOffsetValue(0.250)
             self.viewSet = True

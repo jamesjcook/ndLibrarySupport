@@ -8,7 +8,7 @@ def setTwoDComparisonView():
       " <item>"
       "  <layout type=\"horizontal\">"
       "   <item>"
-      "    	<view class=\"vtkMRMLSliceNode\" singletontag=\"Nav\">"
+      "    	<view class=\"vtkMRMLSliceNode\" singletontag=\"Navigator\">"
       "      <property name=\"orientation\" action=\"default\">Sagittal</property>"
       "      <property name=\"viewlabel\" action=\"default\">Nav</property>"
       "      <property name=\"viewcolor\" action=\"default\">#6EB04B</property>"
@@ -68,7 +68,7 @@ def setSliceNodeLinks(value):
 
 ## Function that sets label outline (See the outline of label instead of solid color)
 def setLabelOutlineAtlas(num):
-    slicer.util.getNode("vtkMRMLSliceNodeNav").SetUseLabelOutline(num)
+    slicer.util.getNode("vtkMRMLSliceNodeNavigator").SetUseLabelOutline(num)
     slicer.util.getNode("vtkMRMLSliceNodeCompare1").SetUseLabelOutline(num)
     slicer.util.getNode("vtkMRMLSliceNodeCompare2").SetUseLabelOutline(num)
 
