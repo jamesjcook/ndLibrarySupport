@@ -79,6 +79,7 @@ class simplify:
         if key in conf:
             conf["#"+key]= conf[key]
             del conf[key]
+        key = "OriginTransform"
         if key in conf:
             conf["#"+key]= conf[key]
             del conf[key]
