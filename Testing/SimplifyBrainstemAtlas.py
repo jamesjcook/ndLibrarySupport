@@ -25,9 +25,6 @@ simplify_job = ndLibrarySupport.simplify(dev_root, dest_lib)
 #simplify_job.show_work_log()
 simplify_job.run()
 
-# TRACTOGRAPHY?
-
-
 ## load test prescribed name collection
 """
 import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(dest_lib)

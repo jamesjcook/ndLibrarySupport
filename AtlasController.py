@@ -7,6 +7,27 @@
 class AtlasController(): ## Rename?
     ## Function that sets up the ndLibrary selected from the DataPackageMenu
     def setUpLibrary(self, library):
+        self.library = library
+        ## Add additional view setups if appropriate
+        tract_path = os.path.join(self.library.Path,"tractography.mrml")
+        if os.path.isfile(tract_path):
+            if "TractographyDisplay" not in slicer.moduleNames.TractographyDisplay:
+                slicer.util.warningDisplay(
+                "Tractography data may be available, however it cannot be used until \n"
+               +"the tractography extensions are installed. \n"
+               +"Pleae open the ExtensionManger and install SlicerDMRI and UKFTractography (not available for all nightly builds)",
+                "Tractography Available and inactive" )
+            else:
+                if "NavigatorWith3DAnd2DCompare" not in custom_layouts:
+                    loadExplorePackageWith3D()
+                    loadNavigatorWith3DAnd2DCompare()
+                    setNavigatorWith3DAnd2DCompare()
+                    showSlicesInNavigator()
+                    setNavigatorAnd2DCompare()
+                v=self.modulepanel.visible
+                slicer.util.moduleSelector().selectModule("TractographyDisplay")
+                slicer.util.moduleSelector().selectModule("Models")
+                self.modulepanel.setVisible(v)
         ## set viewer orientation
         custom_orient=dict()
         orient_keys=["CompareOrientation","NavigatorOrientation"]
@@ -35,9 +56,11 @@ class AtlasController(): ## Rename?
     ## Currently only instantiated in DataPackageMenu
     def __init__(self):
         ## Set up the layout and slice view nodes
-        setTwoDComparisonView()
+        loadNavigatorAnd2DCompare()
+        setNavigatorAnd2DCompare()
         setLabelOutlineAtlas(1)
         setSliceNodeLinks(1)
+        self.library = None
         ## Set up GUI elements
         self.drop1 = volumeDropdown(None, "Compare1")
         self.drop2 = volumeDropdown(None, "Compare2")
@@ -62,10 +85,11 @@ class AtlasController(): ## Rename?
                         if not action.isChecked():
                             action.toggle()
                             break
-        pythonWidget = mainWindow.findChild("QDockWidget", "PythonConsoleDockWidget")
-        pythonWidget.setVisible(0)
-        panelWidget = mainWindow.findChild("QDockWidget", "PanelDockWidget")
-        panelWidget.setVisible(0)
+        slicer.util.selectModule("Colors")
+        self.pythonconsole = mainWindow.findChild("QDockWidget", "PythonConsoleDockWidget")
+        self.pythonconsole.setVisible(0)
+        self.modulepanel = mainWindow.findChild("QDockWidget", "PanelDockWidget")
+        self.modulepanel.setVisible(0)
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
         for node in compNodes:
             node.SetSliceIntersectionVisibility(1)

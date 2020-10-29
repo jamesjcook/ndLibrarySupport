@@ -70,13 +70,19 @@ class simplify:
                 print("\tUNKNOWN job op")
     
     def save_conf(self,lib,dest):
-        conf=lib.conf
+        #conf=lib.conf.copy()
+        conf=ndLibrarySupport.conf("blank")
+        for e in lib.conf:
+            conf[e]=lib.conf[e]
         conf.comments.clear()
         key = "Path"
         if key in conf:
             conf["#"+key]= conf[key]
             del conf[key]
-        key = "OriginTransform"
+        if key in conf:
+            conf["#"+key]= conf[key]
+            del conf[key]
+        key = "CustomPython"
         if key in conf:
             conf["#"+key]= conf[key]
             del conf[key]
@@ -131,6 +137,7 @@ class simplify:
         self.copy_label_vol(lib,label_dir)
         self.copy_color_table(lib,label_dir)
         self.save_label_conf(lib,label_dir)
+        self.copy_tractography(lib,new_location)
         ##
         ## UPDATE filter, pattern, match fields
         ##
@@ -165,6 +172,60 @@ class simplify:
             print("\tsave "+vol_dest)
             slicer.util.saveNode(vol_node,vol_dest, properties)
     
+    def copy_tractography(self,lib,new_location):
+        # look for tractography, and load(or return)
+        if not lib.load_tractography():
+            return
+        else:
+            if "TractographyDisplay" not in slicer.moduleNames.TractographyDisplay:
+                slicer.util.warningDisplay("CANNOT simplify tractography missing required extensions","ERROR ndLibraraySupport Simplify")
+                return
+            # set our output dir/scene path
+            tract_dir=os.path.join(new_location, "tractography")
+            if not os.path.isdir(tract_dir):
+                os.mkdir(tract_dir)
+            tform_logic = slicer.vtkSlicerTransformLogic()
+            lib_name = lib.conf["LibName"]
+            properties = {}
+            # Get the tracks from scene
+            tracks=slicer.util.getNodesByClass("vtkMRMLFiberBundleNode")
+            for node in tracks:
+                trk=node.GetName()
+                #dest = os.path.join(tract_dir,lib_name+"_"+trk+".vtk")
+                dest = os.path.join(tract_dir,trk+".vtk")
+                if os.path.isfile(dest):
+                    print("previously completed "+trk)
+                    continue
+                print("\tharden tform")
+                tform_logic.hardenTransform(node)
+                print("\tsave "+dest)
+                slicer.util.saveNode(node,dest, properties)
+            # set blankish view 
+            #node_list=slicer.mrmlScene.GetNodes()
+            #node_list.GetNumberOfItems()
+            # foreach node, 
+            # if not trk remove 
+            node_classes=('vtkMRMLVolumeNode', 'vtkMRMLViewNode', 'vtkMRMLSliceNode',
+                          'vtkMRMLLinearTransformNode', 'vtkMRMLCameraNode', 'vtkMRMLColorTableNode')
+            for node_class in node_classes:
+                #self.remove_nodes_by_class(node_class)
+                pass
+            slicer.util.saveScene(tract_dir+".mrml")
+            # conf updates
+            lib.conf[lib.recursion_field] = "false"
+            lib.conf[lib.filter_field] = ".*[.]vtk"
+            sep="|"
+            lib.conf[lib.pattern_field] = "(.*)"
+            lib.conf[lib.match_field] = r"\1"
+            if "CustomPython" in lib.conf:
+                del lib.conf["CustomPython"]
+            # conf save
+            self.save_conf(lib,tract_dir)
+            # remove all tracks?
+            for node in tracks:
+                #slicer.mrmlScene.RemoveNode(node)
+                pass
+    
     def copy_color_table(self,lib,new_location):
         lib_name = lib.conf["LibName"]
         fname = "labels_lookup"
@@ -182,6 +243,11 @@ class simplify:
         lib_name = lib.conf["LibName"]
         while isinstance(lib.labelVolume, ndLibrary):
             lib = lib.labelVolume
+            
+        lib.conf[lib.filter_field] = lib_name+".*|labels"
+        sep="|"
+        lib.conf[lib.pattern_field] = "(.*?)(labels)(.*)"
+        lib.conf[lib.match_field] = r"\2"
         self.save_conf(lib,new_location)
     
     def copy_origin_transform(lib):
@@ -196,6 +262,13 @@ class simplify:
         for volKey in vol_set:
             #print(os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
             shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
+    
+    def remove_nodes_by_class(self,node_class):
+        # foreach node, 
+        # if not trk remove 
+        node_list=slicer.util.getNodesByClass(node_class)
+        for node in node_list:
+            slicer.mrmlScene.RemoveNode(node)
 
 #avg = ndLibrary(None, r"D:\Libraries\010Rat_Brain\v2020-06-25\23Rat")
 #single = ndLibrary(None, r"D:\Libraries\010Rat_Brain\v2020-06-25\21Rat")

@@ -593,6 +593,27 @@ class ndLibrary:
             return self.labelDict.getLabelDict()
         return self.labelDict
     
+    def load_tractography(self):
+        print("Tract load")
+        labels = self.getLabelVolume()
+        self.jumpToDir()
+        tract_path = os.path.join(self.Path,"tractography.mrml")
+        if not os.path.isfile(tract_path):
+            print("No tractography.mrml available at "+tract_path)
+            return False
+        slicer.util.loadScene(tract_path)
+        # look for custom python
+        if "CustomPython" in self.conf:
+            print("\t with CustomPython")
+            # run
+            library=self
+            try:
+                exec(open(self.conf["CustomPython"]).read())
+            except:
+                print("CustomPython\""+self.conf["CustomPython"]+"\"Failed in dir"+os.getcwd())
+                return False
+        return True
+    
     ## Returns the label volume associated with the ndLibrary
     ## Loads the label volume into Slicer if not loaded yet
     def getLabelVolume(self):
