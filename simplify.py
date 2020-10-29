@@ -137,6 +137,7 @@ class simplify:
         self.copy_label_vol(lib,label_dir)
         self.copy_color_table(lib,label_dir)
         self.save_label_conf(lib,label_dir)
+        ## tractography needs to be last, becuase it has to save the scene, and removes all the other nodes. 
         self.copy_tractography(lib,new_location)
         ##
         ## UPDATE filter, pattern, match fields
@@ -205,10 +206,15 @@ class simplify:
             #node_list.GetNumberOfItems()
             # foreach node, 
             # if not trk remove 
-            node_classes=('vtkMRMLVolumeNode', 'vtkMRMLViewNode', 'vtkMRMLSliceNode',
-                          'vtkMRMLLinearTransformNode', 'vtkMRMLCameraNode', 'vtkMRMLColorTableNode')
+            node_classes=('vtkMRMLVolumeNode',
+                          'vtkMRMLLinearTransformNode',
+                          #'vtkMRMLColorTableNode',
+                          'vtkMRMLViewNode',
+                          'vtkMRMLSliceNode',
+                          'vtkMRMLCameraNode',
+                          'vtkMRMLLayoutNode')
             for node_class in node_classes:
-                #self.remove_nodes_by_class(node_class)
+                self.remove_nodes_by_class(node_class)
                 pass
             slicer.util.saveScene(tract_dir+".mrml")
             # conf updates
@@ -223,7 +229,7 @@ class simplify:
             self.save_conf(lib,tract_dir)
             # remove all tracks?
             for node in tracks:
-                #slicer.mrmlScene.RemoveNode(node)
+                slicer.mrmlScene.RemoveNode(node)
                 pass
     
     def copy_color_table(self,lib,new_location):
