@@ -19,7 +19,7 @@ class AtlasController(): ## Rename?
                 "Tractography Available and inactive" )
             else:
                 if "NavigatorWith3DAnd2DCompare" not in custom_layouts:
-                    loadExplorePackageWith3D()
+                    loadNavigatorWith3DAnd2D()
                     loadNavigatorWith3DAnd2DCompare()
                     setNavigatorWith3DAnd2DCompare()
                     showSlicesInNavigator()

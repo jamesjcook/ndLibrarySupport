@@ -66,16 +66,3 @@ def loadNavigatorAnd2DCompare():
 def setNavigatorAnd2DCompare():
     layoutManager = slicer.app.layoutManager()
     layoutManager.setLayout(custom_layouts["NavigatorAnd2DCompare"])
-
-
-## Function that links Compare1 and Compare2 slice view nodes
-def setSliceNodeLinks(value):
-    slicer.util.getNode("vtkMRMLSliceCompositeNodeCompare1").SetLinkedControl(value)
-    slicer.util.getNode("vtkMRMLSliceCompositeNodeCompare2").SetLinkedControl(value)
-
-## Function that sets label outline (See the outline of label instead of solid color)
-def setLabelOutlineAtlas(num):
-    slicer.util.getNode("vtkMRMLSliceNodeNavigator").SetUseLabelOutline(num)
-    slicer.util.getNode("vtkMRMLSliceNodeCompare1").SetUseLabelOutline(num)
-    slicer.util.getNode("vtkMRMLSliceNodeCompare2").SetUseLabelOutline(num)
-

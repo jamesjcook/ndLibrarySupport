@@ -4,6 +4,7 @@
 import sys;import os;sys.path.append(r"h:\code");import ndLibrarySupport;
 exec(open(os.path.join(ndLibrarySupport.codePath,"ndLibrary.py")).read())
 f = ndLibrary(None, r"D:\Libraries\010Rat_Brain")
+print("C"+len(f.children))
 #f.children[0].conf_dir
 lib=f.children[0]
 len(lib.children)
