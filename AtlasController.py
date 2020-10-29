@@ -11,7 +11,7 @@ class AtlasController(): ## Rename?
         ## Add additional view setups if appropriate
         tract_path = os.path.join(self.library.Path,"tractography.mrml")
         if os.path.isfile(tract_path):
-            if "TractographyDisplay" not in slicer.moduleNames.TractographyDisplay:
+            if "TractographyDisplay" not in slicer.util.moduleNames():
                 slicer.util.warningDisplay(
                 "Tractography data may be available, however it cannot be used until \n"
                +"the tractography extensions are installed. \n"

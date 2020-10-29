@@ -20,7 +20,7 @@ dist_root = r"D:\Libraries\SimplifiedDistributions"
 ## ex simplify with auto-resolve internal name for master collection
 #simplify_job = ndLibrarySupport.simplify(dev_root, dist_root, True)
 ## simplify with prescribed name for master collection
-dest_lib = os.path.join(dist_root,"RatBrain_v2020-10-16")
+dest_lib = os.path.join(dist_root,"RatBrain_v2020-10-29")
 simplify_job = ndLibrarySupport.simplify(dev_root, dest_lib)
 #simplify_job.show_work_log()
 simplify_job.run()
