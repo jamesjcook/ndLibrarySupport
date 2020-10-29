@@ -16,19 +16,23 @@ def setLabelOutlineAtlas(num):
     slicer.util.getNode("vtkMRMLSliceNodeCompare2").SetUseLabelOutline(num)
 
 def showSlicesInNavigator():
+    # Save current link status, and unlink
     nodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
     node_link=dict()
     for node in nodes:
         node_link[node.GetID()] = node.GetLinkedControl()
         node.SetLinkedControl(0)
-    #SliceFOVMatch2DViewSpacingMatchVolumes 
-    #SliceResolutionMatchVolumes
+    # Set resolution mode
+    nodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
+    for node in nodes:
+        #node.SetSliceResolutionMode(node.SliceFOVMatch2DViewSpacingMatchVolumes)
+        node.SetSliceResolutionMode(node.SliceResolutionMatchVolumes)
+        node.SetSliceVisible(False)
     node=slicer.util.getNode("vtkMRMLSliceNodeNavigator")
-    node.SetSliceResolutionMode (node.SliceFOVMatch2DViewSpacingMatchVolumes)
     node.SetSliceVisible(True)
     node=slicer.util.getNode("vtkMRMLSliceNodeCompare1")
-    node.SetSliceResolutionMode (node.SliceFOVMatch2DViewSpacingMatchVolumes)
     node.SetSliceVisible(True)
+    nodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
     for node in nodes:
         if node.GetID() in node_link:
             node.SetLinkedControl(node_link[node.GetID()])

@@ -78,6 +78,7 @@ class AtlasController(): ## Rename?
         for toolbar in mainWindow.findChildren("QToolBar"):
             toolbar.setVisible(0)
             if "Mouse" in toolbar.name:
+                self.mouseToolbar = toolbar
                 #print(toolbar.name)
                 #action=toolbar.actions()[1]
                 for action in toolbar.actions():

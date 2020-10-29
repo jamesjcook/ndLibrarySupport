@@ -70,6 +70,7 @@ class simplify:
                 print("\tUNKNOWN job op")
     
     def save_conf(self,lib,dest):
+        # for copy to work we have to re-implement our dict sub-class
         #conf=lib.conf.copy()
         conf=ndLibrarySupport.conf("blank")
         for e in lib.conf:
@@ -175,7 +176,13 @@ class simplify:
             slicer.util.saveNode(vol_node,vol_dest, properties)
     
     def copy_tractography(self,lib,new_location):
-        # look for tractography, and load(or return)
+        tract_dir=os.path.join(new_location, "tractography")
+        scene_out=tract_dir+".mrml"
+        # check for tract out scene, and reutn if done.
+        if os.path.isfile(scene_out):
+            print("Tractography complete, skipping")
+            return
+        # load check tractography, or return
         if not lib.load_tractography():
             return
         else:
@@ -183,7 +190,6 @@ class simplify:
                 slicer.util.warningDisplay("CANNOT simplify tractography missing required extensions","ERROR ndLibraraySupport Simplify")
                 return
             # set our output dir/scene path
-            tract_dir=os.path.join(new_location, "tractography")
             if not os.path.isdir(tract_dir):
                 os.mkdir(tract_dir)
             tform_logic = slicer.vtkSlicerTransformLogic()
@@ -195,9 +201,10 @@ class simplify:
                 trk=node.GetName()
                 #dest = os.path.join(tract_dir,lib_name+"_"+trk+".vtk")
                 dest = os.path.join(tract_dir,trk+".vtk")
-                if os.path.isfile(dest):
-                    print("previously completed "+trk)
-                    continue
+                # due to how traactography scene works we cannot skip any ever
+                #if os.path.isfile(dest):
+                #    print("previously completed "+trk)
+                #    continue
                 print("\tharden tform")
                 tform_logic.hardenTransform(node)
                 print("\tsave "+dest)
@@ -217,7 +224,7 @@ class simplify:
             for node_class in node_classes:
                 self.remove_nodes_by_class(node_class)
                 pass
-            slicer.util.saveScene(tract_dir+".mrml")
+            slicer.util.saveScene(scene_out)
             # conf updates
             lib.conf[lib.recursion_field] = "false"
             lib.conf[lib.filter_field] = ".*[.]vtk"
