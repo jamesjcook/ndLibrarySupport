@@ -5,6 +5,16 @@
 ## DataPackageMenu is meant to represent the menu itself, and not the underlying processes that set up the atlas
 ## AtlasController is meant to represent an object that handles the ndLibrary data GUI elements are using
 class AtlasController(): ## Rename?
+    def tractography_prompt(self):
+        slicer.util.warningDisplay(
+        # 68 chars first line which seems reasonable for message box.
+            "Tractography data may be available, however it cannot be used until\n"
+            +"the tractography extensions are installed.\n\n"
+            +"Please open the ExtensionManger (from the view menu) and install\n"
+            +"SlicerDMRI and UKFTractography (not available for all nightly builds)\n\n"
+            +"If the extension manager should fail to display any content, try\n"
+            +"https://www.slicer.org/wiki/Documentation/Nightly/SlicerApplication/ExtensionsManager#Installing_an_extension_without_network_connection",
+            "Tractography Available and inactive" )
     ## Function that sets up the ndLibrary selected from the DataPackageMenu
     def setUpLibrary(self, library):
         self.library = library
@@ -12,11 +22,7 @@ class AtlasController(): ## Rename?
         tract_path = os.path.join(self.library.Path,"tractography.mrml")
         if os.path.isfile(tract_path):
             if "TractographyDisplay" not in slicer.util.moduleNames():
-                slicer.util.warningDisplay(
-                "Tractography data may be available, however it cannot be used until \n"
-               +"the tractography extensions are installed. \n"
-               +"Pleae open the ExtensionManger and install SlicerDMRI and UKFTractography (not available for all nightly builds)",
-                "Tractography Available and inactive" )
+                self.tractography_prompt()
             else:
                 if "NavigatorWith3DAnd2DCompare" not in custom_layouts:
                     loadNavigatorWith3DAnd2D()
