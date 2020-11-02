@@ -147,7 +147,7 @@ class simplify:
         lib.conf[lib.recursion_field] = "true"
         lib.conf[lib.filter_field] = lib_name+".*|labels"
         sep="|"
-        lib.conf[lib.pattern_field] = "(.*?)("+sep.join(vol_set)+"|labels)(.*)"
+        lib.conf[lib.pattern_field] = "(.*?)("+sep.join(vol_set)+"|labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
         self.save_conf(lib,new_location)
     
@@ -260,7 +260,7 @@ class simplify:
             
         lib.conf[lib.filter_field] = lib_name+".*|labels"
         sep="|"
-        lib.conf[lib.pattern_field] = "(.*?)(labels)(.*)"
+        lib.conf[lib.pattern_field] = "(.*?)(labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
         self.save_conf(lib,new_location)
     
