@@ -12,6 +12,7 @@ try:
     import ndLibrarySupport
 except:
     # in-dev path hard path
+    print("DEV CODE PATH")
     sys.path.append(r"h:\code")
     import ndLibrarySupport
 

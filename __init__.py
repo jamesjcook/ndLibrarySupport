@@ -8,21 +8,10 @@ import logging
 import qt
 import slicer
 
-#import inspect
-#from pathlib import Path
+# currently disabled because the update work is unfinished.
+update_checking = False
 
-# import without destroying __file__
-#   import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\010Rat_Brain\v2020-06-25");ndman
-#   import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\010Rat_Brain\v2020-06-25");ndman;ndman=ndLibrarySupport.manager(r"D:\Libraries\040Human_Brainstem");ndman
-#       
-#   import sys;sys.path.append(r"h:\code\ndLibraryViewer");sys.path.append(r"h:\code\ndLibraryViewer\Testing");import slicerrc_copy
-#rootDir = r"D:\Libraries\040Human_Brainstem"
-#rootDir = r"D:\Libraries\010Rat_Brain\v2020-06-25"
-
-#class ndLibraryViewer:
-#def __init__(self,rootDir):
 codePath = os.path.dirname(os.path.abspath(__file__))
-
 
 def update_check(codePath,remote_name='origin'):
     try:
@@ -78,22 +67,20 @@ for file in os.listdir(codePath):
             exec(open(os.path.join(codePath, file)).read())
         else:
             execfile(os.path.join(codePath, file))
-        #print(".")
-        pass
     except:
         print("Code start error in file "+file+" from "+codePath)
-        #return
 
-try:
-    update_available = update_check(codePath)
-    if update_available is not None:
-        import git
-        print("Code could be updated, installing buttons")
-        ## add a toolbar
-        ## add a button with text "Update ndLibrarySupport"
-except:
-    # our update check should absolutely not prevent running, ever.
-    pass
+if update_checking:
+    try:
+        update_available = update_check(codePath)
+        if update_available is not None:
+            import git
+            print("Code could be updated, installing buttons")
+            ## add a toolbar
+            ## add a button with text "Update ndLibrarySupport"
+    except:
+        # our update check should absolutely not prevent running, ever.
+        pass
 
 
 

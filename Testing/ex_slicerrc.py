@@ -9,6 +9,8 @@ dist_root = r"D:\Libraries\SimplifiedDistributions"
 #dest_lib = os.path.join(dist_root,"RatBrain_v2020-10-16")
 # "human brainstem" dev
 dest_lib = os.path.join(dist_root,r"D:\Libraries\040Human_Brainstem")
+# "Mouse" brain dev
+dest_lib = os.path.join(dist_root,r"D:\Libraries\000Mouse_Brain")
 # run with "dev" code.
 sys.path.append(r"h:\code");
 import ndLibrarySupport;
