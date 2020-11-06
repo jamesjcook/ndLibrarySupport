@@ -14,6 +14,7 @@ def setLabelOutlineAtlas(num):
     slicer.util.getNode("vtkMRMLSliceNodeNavigator").SetUseLabelOutline(num)
     slicer.util.getNode("vtkMRMLSliceNodeCompare1").SetUseLabelOutline(num)
     slicer.util.getNode("vtkMRMLSliceNodeCompare2").SetUseLabelOutline(num)
+    slicer.util.getNode("vtkMRMLSliceNodeAxial").SetUseLabelOutline(num)
 
 def showSlicesInNavigator():
     # Save current link status, and unlink

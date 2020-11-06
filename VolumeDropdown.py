@@ -17,7 +17,7 @@ class volumeDropdown(qt.QComboBox):
         self.nodeTag = nodeTag
         qtLayout = slicer.app.layoutManager().sliceWidget(nodeTag).layout()
         qtLayout.addWidget(self)
-        self.addItem(r"<Select Data Package>")
+        self.addItem(r"<To begin, select Data Package from menu of main application>")
         self.libDict = dict()
         self.activated.connect(self.changeVolume)
         if library is not None:

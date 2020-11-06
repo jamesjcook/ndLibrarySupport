@@ -56,6 +56,7 @@ class AtlasController(): ## Rename?
         ## Update each GUI element accordingly
         self.drop1.setupLibrary(library)
         self.drop2.setupLibrary(library)
+        self.drop3.setupLibrary(library)
         self.dropNav.setupLibrary(library)
         self.labelSelector.setupLibrary(library)
     
@@ -63,6 +64,8 @@ class AtlasController(): ## Rename?
     def __init__(self):
         ## Set up the layout and slice view nodes
         loadNavigatorAnd2DCompare()
+        loadNavigatorWithLoadAnd2DCompare()
+        setNavigatorWithLoadAnd2DCompare()
         setNavigatorAnd2DCompare()
         setLabelOutlineAtlas(1)
         setSliceNodeLinks(1)
@@ -70,6 +73,7 @@ class AtlasController(): ## Rename?
         ## Set up GUI elements
         self.drop1 = volumeDropdown(None, "Compare1")
         self.drop2 = volumeDropdown(None, "Compare2")
+        self.drop3 = volumeDropdown(None, "Axial")
         self.dropNav = volumeDropdown(None, "Navigator")
         self.externalLoad = ExternalLoadButton("Load")
         self.labelSelector = InteractiveLabelSelector(None, "Navigator")

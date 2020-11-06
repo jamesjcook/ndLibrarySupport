@@ -42,3 +42,6 @@ class ExternalLoadButton(qt.QPushButton):
                 node.SetBackgroundVolumeID(volumes[node][0])
                 node.SetForegroundVolumeID(volumes[node][1])
                 node.SetReferenceLabelVolumeID(volumes[node][2])
+                sliceWidget = slicer.app.layoutManager().sliceWidget(node.GetNodeTagName())
+                if sliceWidget is not None:
+                    sliceWidget.fitSliceToBackground()
