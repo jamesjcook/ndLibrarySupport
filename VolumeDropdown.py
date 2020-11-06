@@ -98,7 +98,7 @@ class volumeDropdown(qt.QComboBox):
             return
         self.clear()
         self.library = library
-        self.addItem(r"<Please Select Data>")
+        self.addItem(r"<Click here to select data volume>")
         volset = library.getEntireVolumeSet().copy()
         if library.vol_ordering in library.conf:
             sorting = library.conf[library.vol_ordering].split(',')

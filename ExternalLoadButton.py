@@ -34,14 +34,23 @@ class ExternalLoadButton(qt.QPushButton):
         ## Create new method to open a file dialog that behaves as expected?
         result = slicer.app.coreIOManager().openAddDataDialog()
         if result == False:
-            return
+            # result may be false even if we loaded. Will have to read docs on why.
+            # For now alternative is to check if bg id changed.
+            #print("AddDataDialog returned False")
+            #return
+            pass
+            # This whole function works by abusing the default of "reset slice to new data" on load.
+        # When we load data, all viewers are pointed at new data, after that we restore view.
         externalLoadNode = slicer.app.mrmlScene().GetNodeByID(externalLoadID)
         externalLoadNode.SetReferenceLabelVolumeID("None")
         for node in compNodes:
             if node.GetID() != externalLoadID:
+                if node.GetBackgroundVolumeID() == volumes[node][0]:
+                    # if we didnt change background id(eg we didnt load), skip this reset.
+                    continue
                 node.SetBackgroundVolumeID(volumes[node][0])
                 node.SetForegroundVolumeID(volumes[node][1])
                 node.SetReferenceLabelVolumeID(volumes[node][2])
-                sliceWidget = slicer.app.layoutManager().sliceWidget(node.GetNodeTagName())
+                sliceWidget = slicer.app.layoutManager().sliceWidget(node.GetSingletonTag())
                 if sliceWidget is not None:
                     sliceWidget.fitSliceToBackground()
