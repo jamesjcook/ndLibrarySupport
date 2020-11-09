@@ -25,7 +25,7 @@ class AtlasController(): ## Rename?
                 self.tractography_prompt()
             else:
                 if "NavigatorWith3DAnd2DCompare" not in custom_layouts:
-                    loadNavigatorWith3DAnd2D()
+                    loadNavigatorWithLoad2DAnd3D()
                     loadNavigatorWith3DAnd2DCompare()
                     setNavigatorWith3DAnd2DCompare()
                     showSlicesInNavigator()
