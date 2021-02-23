@@ -21,13 +21,13 @@ dist_root = r"D:\Libraries\SimplifiedDistributions"
 ## ex simplify with auto-resolve internal name for master collection
 #simplify_job = ndLibrarySupport.simplify(dev_root, dist_root, True)
 ## simplify with prescribed name for master collection
-dest_lib = os.path.join(dist_root,"RatBrain_v2020-10-29")
+dest_lib = os.path.join(dist_root,"RatBrain_v2021-02-23")
 simplify_job = ndLibrarySupport.simplify(dev_root, dest_lib)
 #simplify_job.show_work_log()
 simplify_job.run()
 
 ## load test the auto-resolved master collection
-#import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\SimplifiedDistributions\DataIndex_Rat_Brain_v2020-10-16")
+#import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\SimplifiedDistributions\DataIndex_Rat_Brain_v2021-02-23")
 ## load test prescribed name collection
 """
 import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(dest_lib)
@@ -37,3 +37,4 @@ import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySu
 # (due to inexperience) no-re-set and re-run while in same session
 # must start fresh... i believe that is due to import, but I dont know things.
 # exec(open(os.path.join(ndLibrarySupport.codePath,"simplify.py")).read())
+
