@@ -68,6 +68,7 @@ class simplify:
                 self.save_conf(job[1],job[2])
             else:
                 print("\tUNKNOWN job op")
+        print("simplify run completed.")
     
     def save_conf(self,lib,dest):
         # for copy to work we have to re-implement our dict sub-class

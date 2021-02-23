@@ -595,12 +595,12 @@ class ndLibrary:
     
     def load_tractography(self):
         print("Tract load")
-        labels = self.getLabelVolume()
-        self.jumpToDir()
         tract_path = os.path.join(self.Path,"tractography.mrml")
         if not os.path.isfile(tract_path):
             print("No tractography.mrml available at "+tract_path)
             return False
+        labels = self.getLabelVolume()
+        self.jumpToDir()
         slicer.util.loadScene(tract_path)
         # look for custom python
         if "CustomPython" in self.conf:
