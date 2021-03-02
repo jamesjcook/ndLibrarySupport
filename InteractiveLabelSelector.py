@@ -120,6 +120,7 @@ class InteractiveLabelSelector:
         regionValue = slicer.modules.DataProbeInstance.infoWidget.layerValues["L"].text
         if regionValue == "" or regionValue == u"<b>Out of Frame</b>":
             return
+        #read the TEXT (HAHaha) of the data probe! extracting the number between parenthesis!
         values = regionValue.split(" ")
         roiNum = values[len(values)-1].replace("(","")
         roiNum = roiNum.replace(")</b>","")

@@ -376,7 +376,7 @@ class ndLibrary:
             print("Labels are already loaded")
             return
         labelPat = r".*[._-]labels[._-].*"
-        lookupPat = ".*_lookup[.](?:txt|ctbl)"
+        lookupPat = ".*_lookup[.](?:txt|ctbl)$"
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
         else:
@@ -435,7 +435,7 @@ class ndLibrary:
         ## Useful for InteractiveLabelSelector
         count = 0
         for line in txt:
-            words = line.split(' ')
+            words = line.split()
             if words[0] is not "#" and len(words) > 4:
                 try:
                     self.labelDict[int(words[0])] = (words[1],words[2],words[3],words[4], count)
