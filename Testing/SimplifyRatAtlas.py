@@ -21,13 +21,13 @@ dist_root = r"D:\Libraries\SimplifiedDistributions"
 ## ex simplify with auto-resolve internal name for master collection
 #simplify_job = ndLibrarySupport.simplify(dev_root, dist_root, True)
 ## simplify with prescribed name for master collection
-dest_lib = os.path.join(dist_root,"RatBrain_v2021-03-01")
+dest_lib = os.path.join(dist_root,"RatBrain_v2021-03-02")
 simplify_job = ndLibrarySupport.simplify(dev_root, dest_lib)
 #simplify_job.show_work_log()
 simplify_job.run()
 
 ## load test the auto-resolved master collection
-#import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\SimplifiedDistributions\DataIndex_Rat_Brain_v2021-02-23")
+#import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(r"D:\Libraries\SimplifiedDistributions\DataIndex_Rat_Brain_v2021-03-02")
 ## load test prescribed name collection
 """
 import sys;sys.path.append(r"h:\code");import ndLibrarySupport;ndman=ndLibrarySupport.manager(dest_lib)
