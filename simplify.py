@@ -123,7 +123,7 @@ class simplify:
             #if ctbl is not None:
             #    volNode.GetDisplayNode().SetAndObserveColorNodeID(ctbl.GetID())
             #vol_dest = os.path.join(new_location,category_text+lib_name+"_"+vol+".nhdr")
-            vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr")
+            vol_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+vol+".nhdr")
             if os.path.isfile(vol_dest):
                 print("previously completed "+vol)
                 continue
@@ -146,7 +146,7 @@ class simplify:
         ## UPDATE filter, pattern, match fields
         ##
         lib.conf[lib.recursion_field] = "true"
-        lib.conf[lib.filter_field] = lib_name+".*|labels"
+        lib.conf[lib.filter_field] = re.sub(r'\W+', '_',lib_name).replace("_labels","")+".*|labels"
         sep="|"
         lib.conf[lib.pattern_field] = "(.*?)("+sep.join(vol_set)+"|labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
@@ -157,7 +157,7 @@ class simplify:
             os.mkdir(new_location)
         lib_name = lib.conf["LibName"]
         vol = "labels"
-        vol_dest = os.path.join(new_location,lib_name+"_"+vol+".nhdr")
+        vol_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+vol+".nhdr")
         if os.path.isfile(vol_dest):
             print("previously completed "+vol)
             return
@@ -244,7 +244,7 @@ class simplify:
     def copy_color_table(self,lib,new_location):
         lib_name = lib.conf["LibName"]
         fname = "labels_lookup"
-        ctbl_dest = os.path.join(new_location,lib_name+"_"+fname+".txt")
+        ctbl_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+fname+".txt")
         if os.path.isfile(ctbl_dest):
             return
         colorTable = lib.colorTable
@@ -259,7 +259,7 @@ class simplify:
         while isinstance(lib.labelVolume, ndLibrary):
             lib = lib.labelVolume
             
-        lib.conf[lib.filter_field] = lib_name+".*|labels"
+        lib.conf[lib.filter_field] = re.sub(r'\W+', '_',lib_name).replace("_labels","")+".*|labels"
         sep="|"
         lib.conf[lib.pattern_field] = "(.*?)(labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
@@ -274,6 +274,7 @@ class simplify:
         except:
             print("No OriginTransform")
     def copy_vol_set(lib,vol_set,new_location,category_txt,lib_name):
+        error("KABLOOIE BAD OLD CODE")
         for volKey in vol_set:
             #print(os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
             shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
