@@ -37,21 +37,21 @@ class simplify:
             lib = self.lib
         # look at category, childcategory, libname, path variables.
         # n would be our "given name"
-        n = os.path.basename(lib.conf_dir)
+        lib_name = os.path.basename(lib.conf_dir)
         vth = ""
         # if we have a redirecting path at this level, that is probably a version
         if "Path" in lib.conf:
             vth = "_"+os.path.basename(lib.conf["Path"])
         # if our lib has a libname, it is probably our preffered nickname.
         if "LibName" in lib.conf:
-            n = lib.conf["LibName"]
+            lib_name  = self.lib_name_disk(lib.conf["LibName"])
         #if in lib.conf:
         #if in lib.conf:
         if lib.parent is not None:
             category = lib.parent.conf["ChildCategory"]
         else:
             category = lib.conf["Category"]
-        return category+"_"+n+vth
+        return category+"_" + lib_name + vth
     
     def show_work_log(self):
         for job in self.jobs:
@@ -123,7 +123,8 @@ class simplify:
             #if ctbl is not None:
             #    volNode.GetDisplayNode().SetAndObserveColorNodeID(ctbl.GetID())
             #vol_dest = os.path.join(new_location,category_text+lib_name+"_"+vol+".nhdr")
-            vol_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+vol+".nhdr")
+            vol_name = self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+"_"+vol
+            vol_dest = os.path.join(new_location,vol_name+".nhdr")
             if os.path.isfile(vol_dest):
                 print("previously completed "+vol)
                 continue
@@ -146,7 +147,7 @@ class simplify:
         ## UPDATE filter, pattern, match fields
         ##
         lib.conf[lib.recursion_field] = "true"
-        lib.conf[lib.filter_field] = re.sub(r'\W+', '_',lib_name).replace("_labels","")+".*|labels"
+        lib.conf[lib.filter_field] = self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+".*|labels"
         sep="|"
         lib.conf[lib.pattern_field] = "(.*?)("+sep.join(vol_set)+"|labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
@@ -157,7 +158,7 @@ class simplify:
             os.mkdir(new_location)
         lib_name = lib.conf["LibName"]
         vol = "labels"
-        vol_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+vol+".nhdr")
+        vol_dest = os.path.join(new_location,self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+"_"+vol+".nhdr")
         if os.path.isfile(vol_dest):
             print("previously completed "+vol)
             return
@@ -244,7 +245,7 @@ class simplify:
     def copy_color_table(self,lib,new_location):
         lib_name = lib.conf["LibName"]
         fname = "labels_lookup"
-        ctbl_dest = os.path.join(new_location,re.sub(r'\W+', '_',lib_name).replace("_labels","")+"_"+fname+".txt")
+        ctbl_dest = os.path.join(new_location,self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+"_"+fname+".txt")
         if os.path.isfile(ctbl_dest):
             return
         colorTable = lib.colorTable
@@ -255,15 +256,24 @@ class simplify:
             shutil.copy(colorTableFile, ctbl_dest)
     
     def save_label_conf(self,lib,new_location):
-        lib_name = lib.conf["LibName"]
         while isinstance(lib.labelVolume, ndLibrary):
             lib = lib.labelVolume
-            
-        lib.conf[lib.filter_field] = re.sub(r'\W+', '_',lib_name).replace("_labels","")+".*|labels"
-        sep="|"
+        filter = self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")
+        filter = ".*(" +filter +"|labels).*"
+        lib.conf[lib.filter_field] = filter
         lib.conf[lib.pattern_field] = "(.*?)(labels)(.*?)"
         lib.conf[lib.match_field] = r"\2"
         self.save_conf(lib,new_location)
+    
+    def lib_name_disk(self,lib_name):
+        # sometimes we need a disk safe name.
+        # change any funny chars to underscore
+        lib_name=re.sub(r'\W+', '_',lib_name)
+        # collapse any multi-unders to single
+        lib_name=re.sub(r'[_]+', '_',lib_name)
+        # finally, trim trailing unders
+        lib_name=re.sub(r'[_]$', '',lib_name)
+        return lib_name
     
     def copy_origin_transform(lib):
         try:
