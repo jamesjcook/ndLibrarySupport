@@ -220,7 +220,14 @@ class ndLibrary:
         os.chdir(self.conf_dir)
         #if self.conf.has_key(self.path_field):
         if self.path_field in self.conf:
-            relativePath = self.conf[self.path_field].replace("/","\\")
+            # CANT BE BOTHERD TO SORT THIS OUT SMART(right now)
+            relativePath = self.conf[self.path_field]
+            winnie_path = self.conf[self.path_field].replace("/","\\")
+            nix_path = self.conf[self.path_field].replace("\\","/").replace("//","/")
+            if not os.path.isdir(relativePath) and os.path.isdir(winnie_path):
+                relativePath = winnie_path
+            if not os.path.isdir(relativePath) and os.path.isdir(nix_path):
+                relativePath = nix_path
             if os.path.isdir(relativePath):
                 os.chdir(relativePath)
                 #print("Jumping to {}".format(os.getcwd()))
@@ -462,7 +469,14 @@ class ndLibrary:
             #print("Track transform is already loaded")
             return
         self.jumpToDir()
-        originPath = self.conf["OriginTransform"].replace("/","\\")
+        # CANT BE BOTHERD TO SORT THIS OUT SMART(right now)
+        originPath = self.conf["OriginTransform"]
+        winnie_path = self.conf["OriginTransform"].replace("/","\\")
+        nix_path = self.conf["OriginTransform"].replace("\\","/").replace("//","/")
+        if not os.path.isdir(originPath) and os.path.isdir(winnie_path):
+            originPath = winnie_path
+        if not os.path.isdir(originPath) and os.path.isdir(nix_path):
+            originPath = nix_path
         if os.path.isfile(originPath):
             # fully resolve the originPath so we can find by path.
             relD=os.path.dirname(originPath)
