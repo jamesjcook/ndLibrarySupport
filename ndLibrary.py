@@ -55,13 +55,16 @@ class ndLibrary:
             self.conf = parent.conf.copy()
             if self.path_field in self.conf:
                 del self.conf[self.path_field]
+            self.conf["Category"]=self.conf["ChildCategory"]
+            del self.conf["ChildCategory"]
+            del self.conf["LibName"]
         elif parent is None:
             self.conf = ndLibrarySupport.conf("blank")
             pass
         else:
             print("Parent is invalid")
             return
-        self.valid = True
+        #self.valid = True
         self.parent = parent
         self.file_loc = file_loc
         self.children = list()
@@ -142,6 +145,7 @@ class ndLibrary:
 
     ## Method to find and make child ndLibraries
     def buildChildren(self):
+        # this is incomplete! recusive load is not cutting the end of the branch, it is do we continue loading our child.
         if self.recursion_field in self.conf and self.conf[self.recursion_field] == "false":
             #print("Reached leaf of tree. No children")
             self.is_leaf = True
@@ -153,7 +157,7 @@ class ndLibrary:
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
         else:
-            self.logger.info("Lib very promiscuous: "+self.conf_dir)
+            self.logger.info("Lib very promiscuous has no filter: "+self.conf_dir)
             filter = ".*"
         self.jumpToDir()
         neighborhood = os.getcwd()
@@ -173,13 +177,31 @@ class ndLibrary:
     def loadEntire(self):
         conf_path = os.path.join(self.file_loc, self.conf_file_name)
         if self.file_loc is not None and os.path.isfile(conf_path):
+            self.valid = True
             #self.conf_path = conf_path
             #print(self.conf_dir)
             #before we subclassed dict
             #self.conf=ndLibrarySupport.conf(conf_path)
             #self.conf=self.conf.fields.copy()
             par_conf=self.conf.copy()
+            #par_conf["Category"]=par_conf["ChildCategory"]
+            #del par_conf["ChildCategory"]
             self.conf = ndLibrarySupport.conf(conf_path,self.conf_file_name,par_conf)
+            if "LibName" not in self.conf:
+                libName = os.path.basename(self.file_loc)
+                ext = re.match(r''+self.extReg, libName)
+                if ext is not None:
+                    ext=ext.group(1)
+                    libName = libName.replace(r"."+ext,"")
+                #if self.pattern_field not in self.conf:
+                #    self.conf[self.pattern_field]="(.*)"
+                #if self.match_field not in self.conf:
+                #    self.conf[self.match_field]=r"\1"
+                #try:
+                #    match_text=re.sub(self.conf[self.pattern_field], self.conf[self.match_field], libName.lower())
+                #except:
+                #    self.logger.error("regex error "+self.conf[self.match_field]+" or "+self.conf[self.pattern_field]+" in conf:"+conf_path )
+                self.conf["LibName"]=libName
             self.conf_path = conf_path
             #self.loadConf(conf_path)
             self.determineRelevance()
@@ -697,6 +719,16 @@ class ndLibrary:
             relevantStrainList.extend(child.getRelevantStrainList())
         return relevantStrainList
     
+    ## Returns a list of libs by category, will sometime expand to also choose what we're filtering on.
+    def getLibsByCategory(self,categoryFilter):
+        if self.valid and self.conf["Category"] == categoryFilter:
+            return [self]
+        libList = list()
+        for child in self.children:
+            if child.valid and child.conf["Category"] == categoryFilter:
+                libList.extend(child.getLibsByCategory(categoryFilter))
+        return libList
+
     ## Function that collects all of the volDict information for an ndLibrary and all child ndLibraries
     ## Include volDict information from children of children and so forth
     ## this unfortunately loses libconf information replacing it with oldest parent.
