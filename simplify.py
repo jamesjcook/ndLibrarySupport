@@ -96,7 +96,7 @@ class simplify:
         if not os.path.isdir(new_location):
             os.mkdir(new_location)
         ## Assumes Strain and LibName fields exist for lib.conf file for a lib
-        category_txt=""
+        category_text=""
         category = lib.conf["Category"]
         if category in lib.conf:
             category_text = lib.conf[category] + "_"
@@ -105,7 +105,7 @@ class simplify:
         lib_name = lib.conf["LibName"]
         vol_set = lib.getEntireVolumeSet()
         ## copy_vol_set replaced by load/harden/save in line loop.
-        #self.copy_vol_set(lib,vol_set,new_location,category_txt,lib_name)
+        #self.copy_vol_set(lib,vol_set,new_location,category_text,lib_name)
         tform_logic = slicer.vtkSlicerTransformLogic()
         # do not compress output
         properties = {'useCompression': 0}
@@ -117,7 +117,11 @@ class simplify:
                 print("custom color table:"+vol_set[vol].conf[ctblKey]+" for "+vol)
                 if ctblKey not in lib.conf:
                     lib.conf[ctblKey] = os.path.basename(ctbl)
-                    ctbl_dest = shutil.copy(ctbl, os.path.join(new_location, lib.conf[ctblKey]))
+                ctbl_dest=os.path.join(new_location, lib.conf[ctblKey])
+                if not os.path.isfile(ctbl_dest):
+                    ctbl_dest = shutil.copy(ctbl, ctbl_dest)
+                else:
+                    print("previously completed "+ctblKey)
             else:
                 ctbl = None
             #if ctbl is not None:
@@ -279,15 +283,16 @@ class simplify:
         try:
             originTransform = lib.originTransform[0]
             #print(originTransform)
-            #print(os.path.join(new_location, category_txt+lib_name+"_"+originTransform.split("\\")[-1]))
+            #print(os.path.join(new_location, category_text+lib_name+"_"+originTransform.split("\\")[-1]))
             shutil.copy(originTransform, os.path.join(new_location, originTransform.split("\\")[-1]))
         except:
             print("No OriginTransform")
-    def copy_vol_set(lib,vol_set,new_location,category_txt,lib_name):
+    
+    def copy_vol_set(lib,vol_set,new_location,category_text,lib_name):
         error("KABLOOIE BAD OLD CODE")
         for volKey in vol_set:
-            #print(os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
-            shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_txt+lib_name+"_"+volKey+".nii.gz"))
+            #print(os.path.join(new_location, category_text+lib_name+"_"+volKey+".nii.gz"))
+            shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_text+lib_name+"_"+volKey+".nii.gz"))
     
     def remove_nodes_by_class(self,node_class):
         # foreach node, 
