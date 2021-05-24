@@ -11,16 +11,16 @@ import slicer
 # currently disabled because the update work is unfinished.
 update_checking = False
 
-codePath = os.path.dirname(os.path.abspath(__file__))
+code_directory = os.path.dirname(os.path.abspath(__file__))
 
-def update_check(codePath,remote_name='origin'):
+def update_check(code_directory,remote_name='origin'):
     try:
         import git
     except ImportError:
-        print(" git unavailable, cannot check for updates of "+codePath)
+        print(" git unavailable, cannot check for updates of "+code_directory)
         return None
     try:
-        repo = git.Repo(codePath)
+        repo = git.Repo(code_directory)
     except:
         return None
     # git fetch
@@ -50,29 +50,30 @@ def code_update(repo):
     return
 
 ## Find code and execute it
-print("ndLibrarySupport: setup code from "+codePath)
-for file in os.listdir(codePath):
-    if '__init__' in file:
+print("ndLibrarySupport: setup code from "+code_directory)
+code_file=''
+for code_file in os.listdir(code_directory):
+    if '__init__' in code_file:
         continue
-    if os.path.isdir(os.path.join(codePath, file)) or not re.match(r''+r".*[.]py$", file):
+    if os.path.isdir(os.path.join(code_directory, code_file)) or not re.match(r''+r".*[.]py$", code_file):
         continue
-    #print("exec(open(r\""+os.path.join(codePath, file)+"\").read())")
+    #print("exec(open(r\""+os.path.join(code_directory, code_file)+"\").read())")
     try:
         #import importlib.util
         #spec = importlib.util.spec_from_file_location("module.name", "/path/to/file.py")
-        #spec = importlib.util.spec_from_file_location(file, os.path.join(codePath, file))
+        #spec = importlib.util.spec_from_file_location(file, os.path.join(code_directory, file))
         #foo = importlib.util.module_from_spec(spec)
         #spec.loader.exec_module(foo)
         if (sys.version_info > (3, 0)):
-            exec(open(os.path.join(codePath, file)).read())
+            exec(open(os.path.join(code_directory, code_file)).read())
         else:
-            execfile(os.path.join(codePath, file))
+            execfile(os.path.join(code_directory, code_file))
     except:
-        print("Code start error in file "+file+" from "+codePath)
+        print("Code start error in file "+code_file+" from "+code_directory)
 
 if update_checking:
     try:
-        update_available = update_check(codePath)
+        update_available = update_check(code_directory)
         if update_available is not None:
             import git
             print("Code could be updated, installing buttons")
