@@ -399,7 +399,6 @@ class ndLibrary:
     
     ## Loads in the label volume file for a particular specimen
     ## Loads the lookup table for the different regions of the brain
-    ## No lookup table in example directory, for now is hard coded to go to a specific file in a specific directory
     def loadLabels(self):
         if self.labelDict is not None and self.colorTable is not None and self.labelVolume is not None:
             print("Labels are already loaded")
@@ -442,36 +441,64 @@ class ndLibrary:
         if not isinstance(self.labelVolume, tuple):
             #print("Not a tuple. No valid volumes found.")
             return
-        #txt = open(clts[cltIndex])
         ## Assume that the first text file found is the right color lookup table file
-        txt = open(clts[0])
+        clt_idx=0
+        ctbl_file_path=os.path.join(os.getcwd(), clts[clt_idx])
         #print("Found color lookup table")
         self.labelDict = dict()
         if (sys.version_info > (3, 0)):
             # slicer py3 call, nightlies, and future next release
-            colorTable = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]))
+            colorTable = slicer.util.loadColorTable(ctbl_file_path)
         else:
             #slicer py2 call, current release(as of 2020-10) 4.10.2
-            [loadSuccess, colorTable] = slicer.util.loadColorTable(os.path.join(os.getcwd(), clts[0]), returnNode=True)
+            [loadSuccess, colorTable] = slicer.util.loadColorTable(ctbl_file_path, returnNode=True)
             if not loadSuccess:
                 colorTable = None
         if colorTable is None:
-            print("Could not load color lookup table. File: {}".format(clts[0]))
+            print("Could not load color lookup table. File: {}".format(clts[clt_idx]))
             return
-        self.colorTable = (os.path.join(os.getcwd(), clts[0]), colorTable)
-        ## Count parameter is the number a node will be when ordered ascendingly
-        ## i.e. node 0 is still 0, but node 1001 becomes 167, 1002 becomes 168, etc.
-        ## Useful for InteractiveLabelSelector
-        count = 0
-        for line in txt:
-            words = line.split()
-            if words[0] is not "#" and len(words) > 4:
+        self.colorTable = (ctbl_file_path, colorTable)
+        ## This loads up and parses the color table manually... that should be completely unnecessary
+        ## The dict is required for InteractiveLabelSelector
+        ## Count parameter is the number a node will be IF ordered ascendingly
+        ## SO, IF INPUT NOT ORDERED ASCENDINGLY THIS IS BROKEN. eg... this is bad...
+        ## Replacing with use loaded color table below
+        #txt = open(clts[cltIndex])
+        # txt = open(clts[clt_idx])
+        # count = 0
+        # for line in txt:
+            # words = line.split()
+            # if words[0] is not "#" and len(words) >= 5:
+                # try:
+                    # self.labelDict[int(words[0])] = (words[1],words[2],words[3],words[4], count)
+                # except ValueError:
+                    # pass
+                # count += 1
+        blank='(none)'
+        for roi_num in range(0,colorTable.GetNumberOfColors()):
+            cname=colorTable.GetColorName(roi_num)
+            #cname=colorTable.GetColorNameWithoutSpaces(roi_num,'_')
+            # set color 0 to black, and invsisble
+            #colorTable.SetColor(0,0,0,0,0)
+            # an invalid color which we'll fill in using GetColor(IDX,color_at_idx)
+            # r, g, b, alpha
+            color_at_idx = [-1,-1,-1,-1]
+            # We dont know the row until we the table view is populated! I think we've got our code connected wrong!
+            row_num = -1
+            # selector.tableView.model().rowCount()
+            if cname != blank:
                 try:
-                    self.labelDict[int(words[0])] = (words[1],words[2],words[3],words[4], count)
+                    if colorTable.GetColor(roi_num,color_at_idx):
+                        # self.labelDict[roi_num] = [cname, row_num, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
+                        self.labelDict[roi_num] = [cname, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
+                        # self.labelDict[cname] = [roi_num, row_num, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
+                        self.labelDict[cname] = [roi_num, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
+                    else:
+                        print("error color fetching idx "+roi_num+" name:"+cname)
                 except ValueError:
                     pass
-                count += 1
         parent_lib = self.parent
+        ## assign label info to this library and all libraries above this level.
         #print("Found valid labels in {}".format(self.file_loc))
         while parent_lib is not None:
             parent_lib.labelDict = self
@@ -597,13 +624,13 @@ class ndLibrary:
         return volNode
     
     ## Returns the name of a labeled region given a region number read from the color lookup table
-    def getRegionLabel(self, num):
+    def getRegionLabel(self, roi_num):
         if isinstance(self.labelDict, type(self)):
-            return self.labelDict.getRegionLabel(num)
-        if not num in self.labelDict:
+            return self.labelDict.getRegionLabel(roi_num)
+        if not roi_num in self.labelDict:
             print("Invalid region number")
             return
-        return self.labelDict[num][0]
+        return self.labelDict[roi_num][0]
     
     ## Toggles the label volume on or off given the value of show
     def toggleLabelVolume(self, show):
@@ -680,26 +707,18 @@ class ndLibrary:
                 print("Failed to load labelVolume")
                 return None
         return self.labelVolume[1]
-        
+    
+    ## Should be unnecessary going forward, as we'll connect "colornum"(which appears to be roinum) direct on load
     ## From the region number of a label, get the row number for the table of label colors (Found in Colors module)
     ## Mostly used for InteractiveLabelSelector
-    def getRowNum(self, roiNum):
-        if isinstance(self.labelDict, type(self)):
-            return self.labelDict.getRowNum(roiNum)
-        if roiNum in self.labelDict:
-            return self.labelDict[roiNum][4]
-        return None
+    def getRowNum(self, roi_num):
+        print("there is no row data for ndlibrary!")
     
+    ## Should be unnecessary going forward, as we'll connect "colornum"(which appears to be roinum) direct on load
     ## From the row number of the table of label colors, find the associated region number of a label
     ## Mostly used for InteractiveLabelSelector
-    def getRegionNum(self, countNum):
-        if isinstance(self.labelDict, type(self)):
-            return self.labelDict.getRegionNum(countNum)
-        if self.labelDict is None:
-            return None
-        for key in self.labelDict:
-            if self.labelDict[key][4] == countNum:
-                return key
+    def getRegionNum(self, row_num):
+        print("there is no row data for ndlibrary!")
         return None
     
     ## Meant to tell whether or not ndLibrary object is initialized properly

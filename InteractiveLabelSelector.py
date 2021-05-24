@@ -28,6 +28,8 @@ class InteractiveLabelSelector:
         self.nonePushButton = qt.QPushButton("Turn off all labels")
         self.allPushButton.released.connect(self.turnOnLabels)
         self.nonePushButton.released.connect(self.turnOffLabels)
+        # for our table view, since we only use 0/1 opacity, we'll get clever and use opacity as index into this array.
+        self.opacity_text=['No','Yes']
         #insert(through theft from data probe) label line to bottom of window
         statusBar = slicer.util.mainWindow().findChildren('QStatusBar')[0]
         regionLabel = slicer.modules.DataProbeInstance.infoWidget.layerValues["L"]
@@ -44,6 +46,7 @@ class InteractiveLabelSelector:
         for sliceTag in sliceNames:
             sliceNodeInteractor = slicer.app.layoutManager().sliceWidget(sliceTag).sliceView().interactor()
             sliceNodeInteractor.AddObserver('LeftButtonReleaseEvent', self.processSliceViewClick)
+        self.library=None
         if library is not None:
             self.setupLibrary(library)
     
@@ -66,54 +69,84 @@ class InteractiveLabelSelector:
             return
         self.comboBox.currentNodeID = u'' + library.getColorTableNode().GetID()
         self.setHideColorsCheckState(0)
-        numRows = self.tableView.colorModel().rowCount()
-        for i in range(0, numRows):
-            opacityIndex = self.tableView.model().index(i, 2)
-            opacity = float(self.tableView.model().data(opacityIndex))
-            visibleIndex = self.tableView.model().index(i, 3)
-            if opacity == 0:
-                self.tableView.model().setData(visibleIndex, 'No')
-            else:
-                self.tableView.model().setData(visibleIndex, 'Yes')
+        for row_num in range(0, self.tableView.colorModel().rowCount()):
+            cname_index = self.tableView.model().index(row_num, 1)
+            cname = self.tableView.model().data(cname_index)
+            if 'Exterior' in cname or 'Background' in cname:
+                continue
+            opacity_index = self.tableView.model().index(row_num, 2)
+            visible_index = self.tableView.model().index(row_num, 3)
+            opacity = float(self.tableView.model().data(opacity_index))
+            self.tableView.model().setData(visible_index, self.opacity_text[round(opacity)])
         self.setHideColorsCheckState(2)
-
     
     ## Turns off all labels for a LabelMapVolumeNode
     def turnOffLabels(self):
-        self.setLabelOpacity(0)
+        self.setAllLabelOpacity(0)
     
     ## Turns on all relevant labels for a LabelMapVolumeNode
     def turnOnLabels(self):
-        self.setLabelOpacity(1)
+        self.setAllLabelOpacity(1)
     
     ## Sets the opacity of the labels to a certain value
     ## Skips opacity of region 0: assumed to be Exterior
-    def setLabelOpacity(self, value):
+    def setAllLabelOpacity(self, opacity_value):
+        if self.library is None:
+            print("Library not ready")
+            return
         idDict = dict()
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+        # do in background, by taking label volume out of view
+        # print("hide labels start")
         for node in compNodes:
             idDict[node] = node.GetLabelVolumeID()
             node.SetReferenceLabelVolumeID("None")
+        # print("hide labels end")
         colorTable = self.library.getColorTableNode()
-        labelDict = self.library.getLabelDict()
         self.comboBox.currentNodeID = u'' + colorTable.GetID()
-        numRows = self.tableView.colorModel().rowCount()
-        for i in range(0, numRows):
-            #if labelDict.has_key(i) and i != 0:
-            if i in labelDict and i != 0:
-                colorTable.SetOpacity(i, value)
-                index = self.tableView.model().index(i, 3)
-                if value == 0:
-                    self.tableView.model().setData(index, 'No')
-                else:
-                    self.tableView.model().setData(index, 'Yes')
+        #colorTable.GetColorName(clr_num)
+        #colorTable.GetNoName()
+        #colorTable.GetNumberOfColors()
+        #for row_num in range(0, self.tableView.colorModel().rowCount()):
+        # color number is our roi number + any blanks for rois not filled in, blanks are named colorTable.GetNoName()
+        for clr_num in range(0, colorTable.GetNumberOfColors()):
+            # this is coming in as a none! but why!
+            cname = colorTable.GetColorName(clr_num)
+            if cname == colorTable.GetNoName() or 'Exterior' in cname or 'Background' in cname:
+                continue
+            row_num = self.tableView.rowFromColorIndex(clr_num)
+            status_print="c:"+str(clr_num)+"r:"+str(row_num)
+            current_color=[-1,-1,-1,-1]
+            status_get_color=colorTable.GetColor(clr_num,current_color)
+            if status_get_color:
+                current_opacity=current_color[3]
+            else:
+                try:
+                    opacity_index = self.tableView.model().index(row_num, 2)
+                    current_opacity = float(self.tableView.model().data(opacity_index))
+                except:
+                    print("  skip, no opacity")
+                    continue
+            if round(current_opacity) == opacity_value:
+                # print(status_print+" skip")
+                continue
+            #cname_index = self.tableView.model().index(row_num, 1)
+            #cname = self.tableView.model().data(cname_index)
+            visible_index = self.tableView.model().index(row_num, 3)
+            colorTable.SetOpacity(clr_num, opacity_value)
+            self.tableView.model().setData(visible_index, self.opacity_text[round(current_opacity)])
+            # print(status_print+" set")
+        # print("show labels")
         for node in compNodes:
             node.SetReferenceLabelVolumeID(idDict[node])
+        # print("show labels end")
     
     ## Function that toggles the color of a label for a selected row in the table of colors
     def processTableViewClick(self, index):
-        roiNum = index.row()
-        self.toggleColor(roiNum)
+        row_num = index.row()
+        cname_index = self.tableView.model().index(row_num, 1)
+        cname = self.tableView.model().data(cname_index)
+        self.toggleColor(self.library.getLabelDict()[cname][0])
     
     ## Function that toggles the color of a label for a slice view
     def processSliceViewClick(self, observee, event):
@@ -122,36 +155,45 @@ class InteractiveLabelSelector:
             return
         #read the TEXT (HAHaha) of the data probe! extracting the number between parenthesis!
         values = regionValue.split(" ")
-        roiNum = values[len(values)-1].replace("(","")
-        roiNum = roiNum.replace(")</b>","")
-        roiNum = int(roiNum)
-        self.toggleColor(roiNum)
+        roi_num = values[len(values)-1].replace("(","")
+        roi_num = roi_num.replace(")</b>","")
+        # print("Toggle: "+roi_num)
+        roi_num = int(roi_num)
+        self.toggleColor(roi_num)
     
     ## Function that toggles the opacity of a region in the slice view
     ## Function will change the lookup table in the colors modules in Slicer to the one found in a specific library
     ## In the future, maybe change lookup table to the one being used by the labelmap volume?
     ## Double clicking a particular row will change the opacity value between 0 and 1        
-    def toggleColor(self, roiNum):
-        if roiNum == 0:
+    def toggleColor(self, roi_num):
+        if roi_num == 0:
             return
         colorTable = self.library.getColorTableNode()
         if colorTable is None:
+            print("no color table available")
             return
-        self.comboBox.currentNodeID = u'' + colorTable.GetID()
-        rowNum = self.library.getRowNum(roiNum)
-        if rowNum is None:
-            rowNum = roiNum
-            roiNum = self.library.getRegionNum(rowNum)
-        opacityIndex = self.tableView.model().index(rowNum, 2)
-        visibleIndex = self.tableView.model().index(rowNum, 3)
-        #print(self.tableView.model().data(opacityIndex))
-        if self.tableView.model().data(opacityIndex) == None:
+        cname = colorTable.GetColorName(roi_num)
+        if cname == colorTable.GetNoName() or 'Exterior' in cname or 'Background' in cname:
+            print("skip toggle on "+cname)
+            return
+        #self.comboBox.currentNodeID = u'' + colorTable.GetID()
+        row_num = self.tableView.rowFromColorIndex(roi_num)
+        if row_num is None:
+            print("problem in finding tableview row_num from roi_num(color number)")
+        #opacity_index = self.tableView.model().index(row_num, 2)
+        visible_index = self.tableView.model().index(row_num, 3)
+        current_color=[-1,-1,-1,-1]
+        status_get_color=colorTable.GetColor(roi_num,current_color)
+        #if self.tableView.model().data(opacity_index) is not None:
+        if status_get_color:
+            opacity_value=current_color[3]
+        else:
             print("Opacity data not present")
             return
-        opacity = float(self.tableView.model().data(opacityIndex))
-        if opacity == 0:
-            colorTable.SetOpacity(roiNum, 1)
-            self.tableView.model().setData(visibleIndex, 'Yes')
-        else:
-            colorTable.SetOpacity(roiNum, 0)
-            self.tableView.model().setData(visibleIndex, 'No')
+        # get current
+        #opacity_value = float(self.tableView.model().data(opacity_index))
+        # flippit
+        opacity_value=not round(opacity_value);
+        colorTable.SetOpacity(roi_num, opacity_value)
+        self.tableView.model().setData(visible_index, self.opacity_text[opacity_value])
+    
