@@ -3,7 +3,7 @@ import sys
 import os
 
 dist_root = r"D:\Libraries\SimplifiedDistributions"
-dest_lib = os.path.join(dist_root,r"RatBrain_v2021-03-02")
+dest_lib = os.path.join(dist_root,r"RatBrain_v2021-05-21")
 # run with "dev" code.
 sys.path.append(r"h:\code");
 import ndLibrarySupport;
