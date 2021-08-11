@@ -183,7 +183,8 @@ class ndLibrary:
             #before we subclassed dict
             #self.conf=ndLibrarySupport.conf(conf_path)
             #self.conf=self.conf.fields.copy()
-            par_conf=self.conf.copy()
+            #par = parent 
+            par_conf=self.conf.copy() 
             #par_conf["Category"]=par_conf["ChildCategory"]
             #del par_conf["ChildCategory"]
             self.conf = ndLibrarySupport.conf(conf_path,self.conf_file_name,par_conf)
@@ -345,7 +346,6 @@ class ndLibrary:
             if ext is None:
                 self.logger.debug("\tNot expected ext:"+libEntries[i]+" using:"+self.extReg)
                 continue
-            cExtPriority = self.extensionPriority.index(ext)
             #fileName = libEntries[i].split(".")[0]
             libName = libEntries[i].replace(r"."+ext,"")
             #libName = libEntries[i]
@@ -364,6 +364,7 @@ class ndLibrary:
                 continue
             #else:
             #    match_text=match.group(1)
+            cExtPriority = self.extensionPriority.index(ext)
             lExtPriority = 100
             if match_text in volExtPriority:
                 lExtPriority = volExtPriority[match_text]
@@ -414,6 +415,11 @@ class ndLibrary:
         #print("Loading labels for {}".format(self.file_loc))
         self.jumpToDir()
         try:
+
+            
+            #########
+            #color tables=clts
+            #labels=list of files that match filter pattern
             labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
             clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filter, f) and os.path.isfile(f)]
         except re.error:

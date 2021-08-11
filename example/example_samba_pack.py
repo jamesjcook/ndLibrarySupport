@@ -8,9 +8,10 @@ import os
 # need to mount piper for this to work, also lib.conf files can be lost!
 # copy of those is in this directory masquerading as examples
 #lib_path=r'\\piper\piperspace\18.gaj.42_packs_BXD89'
-lib_path=r'/Volumes/piperspace/18.gaj.42_packs_BXD89'
+#lib_path=r'/Volumes/piperspace/18.gaj.42_packs_BXD89'
+lib_path=r'/Users/harry/Data/18.gaj.42_packs_BXD89'
 # run with "dev" code.
-sys.path.append(r"/Volumes/workstation_home/software/visualization/slicer");
+sys.path.append(r"/Users/harry/Documents/code");
 import ndLibrarySupport;
 #TransformedDataPackage
 ndman=ndLibrarySupport.manager(lib_path,'TransformedDataPackage')
