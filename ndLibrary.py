@@ -178,7 +178,6 @@ class ndLibrary:
     def loadEntire(self):
         conf_path = os.path.join(self.file_loc, self.conf_file_name)
         if not os.path.isfile(conf_path) and self.conf_template is not None:
-            print('   NEED TO GENERATE CONF FILE FOR: ' + conf_path )
             self.conf.conf_path = conf_path
             self.conf.conf_dir = self.file_loc
             self.conf.generate(self.conf_template)
@@ -422,24 +421,15 @@ class ndLibrary:
         #print("Loading labels for {}".format(self.file_loc))
         self.jumpToDir()
         try:
-
-            
             #########
             #color tables=clts
             #labels=list of files that match filter pattern
-            
-            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
-            
             labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
             clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filter, f) and os.path.isfile(f)]
         except re.error:
             print("loadLabels failed on regex match "+labelPat+" and "+filter)
             return
         #if re.match(".*labels.*", os.getcwd()) and ( len(labels) == 0 or len(clts) == 0 ):
-        
-        
-        if "labels" in self.volDict
-        
         if "labels" in os.getcwd() and ( len(labels) == 0 or len(clts) == 0 ):
             #print("loadLabels unsucecssful, labels found:"+str(len(labels))+" color tables:"+str(len(clts)))
             #print("\t"+os.getcwd()+"  pattern: "+filter+" lbl filter: "+labelPat+" ctbl filter: "+lookupPat)

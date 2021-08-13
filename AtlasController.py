@@ -27,7 +27,9 @@ class AtlasController(): ## Rename?
                 if "NavigatorWith3DAnd2DCompare" not in custom_layouts:
                     loadNavigatorWithLoad2DAnd3D()
                     loadNavigatorWith3DAnd2DCompare()
+                    loadNavigatorAndTallAxial()
                     setNavigatorWith3DAnd2DCompare()
+                    setNavigatorAndTallAxial()
                     showSlicesInNavigator()
                     setNavigatorAnd2DCompare()
                 v=self.modulepanel.visible
@@ -65,8 +67,10 @@ class AtlasController(): ## Rename?
         ## Set up the layout and slice view nodes
         loadNavigatorAnd2DCompare()
         loadNavigatorWithLoadAnd2DCompare()
+        loadNavigatorAndTallAxial()
         setNavigatorWithLoadAnd2DCompare()
         setNavigatorAnd2DCompare()
+        setNavigatorAndTallAxial()
         setLabelOutlineAtlas(1)
         setSliceNodeLinks(1)
         self.library = None
