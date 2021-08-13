@@ -8,17 +8,28 @@ class manager:
     def __init__(self,rootDir,categoryFilter=r'Species'):
         if not os.path.isdir(rootDir):
             print("Please specify a valid path")
-            return
+            print(rootDir)
+            return1
+        self.rootDir = rootDir
+        self.categoryFilter = categoryFilter
+        self.menu = None
+        self.setup_library(rootDir)
+        
+        slicer.util.messageBox("Click "+self.menu.title+" menu to begin")
+        #self.menu.setProperty("flashing", 0)
+        
+    def setup_library(self, rootDir):
         ## Create a tree of ndLibrary object where masterLib is the root
         self.library = ndLibrary(None, rootDir)
+        libs=self.library.getLibsByCategory(self.categoryFilter)
         ## Create the menu of data packages to be used in the ndLibraryViewer
         ## DataPackageMenu will instantiate a controller object that will create the other GUI elements
         # Old method of filtering let the ndlibrary choose whom went into menu.
         # self.menu = DataPackageMenu(self.library.getRelevantStrainList())
         # new uses configurable category filter internal.
-        libs=self.library.getLibsByCategory(categoryFilter)
         if len(libs) == 0 :
             print("error, no libs matched "+categoryFilter)
-        self.menu = DataPackageMenu(libs)
-        slicer.util.messageBox("Click "+self.menu.title+" menu to begin")
-        #self.menu.setProperty("flashing", 0)
+        if (self.menu is None):
+            self.menu = DataPackageMenu(libs)
+        else:
+            self.menu.populate_menu(libs)

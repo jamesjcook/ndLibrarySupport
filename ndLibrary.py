@@ -17,7 +17,7 @@ class ndLibrary:
     ## conf_file_name: String that stores the default name of a conf file (lib.conf)
     ## labelDict: A dictionary populated with the labels found in a lookup table file
     ## valid: A field that tells if an ndLibrary object is valid for use (Needs to pass the initial checks)
-    def __init__(self, parent, file_loc):
+    def __init__(self, parent, file_loc, conf_template=None):
         self.valid = False
         ## set log bits so we can easily spam regex info for debug
         #logging.basicConfig(level=logging.DEBUG, format='%(message)s')
@@ -67,6 +67,7 @@ class ndLibrary:
         #self.valid = True
         self.parent = parent
         self.file_loc = file_loc
+        self.conf_template = conf_template
         self.children = list()
         # TODO: replace is_leaf with function checking child count
         self.is_leaf = False
@@ -176,6 +177,12 @@ class ndLibrary:
     ## Loads a conf file, makes all possible child ndLibraries, and repeats the process for each child
     def loadEntire(self):
         conf_path = os.path.join(self.file_loc, self.conf_file_name)
+        if not os.path.isfile(conf_path) and self.conf_template is not None:
+            print('   NEED TO GENERATE CONF FILE FOR: ' + conf_path )
+            self.conf.conf_path = conf_path
+            self.conf.conf_dir = self.file_loc
+            self.conf.generate(self.conf_template)
+            
         if self.file_loc is not None and os.path.isfile(conf_path):
             self.valid = True
             #self.conf_path = conf_path
@@ -420,12 +427,19 @@ class ndLibrary:
             #########
             #color tables=clts
             #labels=list of files that match filter pattern
+            
+            labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
+            
             labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
             clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filter, f) and os.path.isfile(f)]
         except re.error:
             print("loadLabels failed on regex match "+labelPat+" and "+filter)
             return
         #if re.match(".*labels.*", os.getcwd()) and ( len(labels) == 0 or len(clts) == 0 ):
+        
+        
+        if "labels" in self.volDict
+        
         if "labels" in os.getcwd() and ( len(labels) == 0 or len(clts) == 0 ):
             #print("loadLabels unsucecssful, labels found:"+str(len(labels))+" color tables:"+str(len(clts)))
             #print("\t"+os.getcwd()+"  pattern: "+filter+" lbl filter: "+labelPat+" ctbl filter: "+lookupPat)
@@ -449,8 +463,12 @@ class ndLibrary:
             return
         ## Assume that the first text file found is the right color lookup table file
         clt_idx=0
-        ctbl_file_path=os.path.join(os.getcwd(), clts[clt_idx])
-        #print("Found color lookup table")
+        if(len(clts) > 0):
+            ctbl_file_path=os.path.join(os.getcwd(), clts[clt_idx])
+        else:
+            print("WARNING: no lookup table at: " + os.getcwd())
+            return
+        
         self.labelDict = dict()
         if (sys.version_info > (3, 0)):
             # slicer py3 call, nightlies, and future next release

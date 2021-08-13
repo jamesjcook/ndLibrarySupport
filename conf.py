@@ -25,7 +25,7 @@ class conf(dict):
             self.conf_path=conf_path
             self.conf_dir=os.path.dirname(conf_path)
             self.conf_name=os.path.basename(conf_path)
-        else:# os.path.isdir(conf_path):
+        elif (r'lib.conf' not in conf_path): # os.path.isdir(conf_path):
             self.conf_path=os.path.join(conf_path,conf_name)
             self.conf_dir=conf_path
             self.conf_name=conf_name
@@ -33,6 +33,14 @@ class conf(dict):
             self.load(self.conf_path)#, existing_conf)
         else:
             print("New empty conf for "+self.conf_path)
+            
+    ## generate a new config file from a template if does not exist
+    ## template is the path to template config file 
+    def generate(self, template):
+        print('    GENERATING NEW CONF FILE FOR: ' + template)
+        self.load(template)
+        self.save()
+        
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
     def load(self, file=None):#, existing_conf = None):
         if file is None:
@@ -79,11 +87,13 @@ class conf(dict):
             print(indent+"\t"+e+"\t= "+self[e])
     ## save conf
     def save(self,out_path=None):
+        if out_path is None:
+            out_path = self.conf_dir
         if out_path and os.path.isdir(out_path):
             #print("Given dir, add name")
             out_path=os.path.join(out_path,"lib.conf")
         else:
-            print("Write disabled, switch to print")
+            print("Write disabled, switch to print" + "missing out path " + out_path)
             out_path = None
         #if out_path is None or os.path.isfile(out_path):
         if out_path and os.path.isfile(out_path):

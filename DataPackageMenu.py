@@ -23,7 +23,21 @@ class DataPackageMenu(qt.QMenu):
         self.title = "Data Packages"
         ## Instantiate the controller of the ndLibraryViewer
         self.controller = AtlasController()
+        self.populate_menu(ndLibraries)
+        #self.setProperty("flashing", 0)
+        self.flashTimer.timeout.connect(self.flashToggle)
+        # Triggered didnt work to stop the timer, clicked, and entered don't exist, hovered seems to work
+        # Trouble is: it floats in top left corner instead of on menu as expected.
+        #self.triggered.connect(self.flashStop)
+        #self.clicked.connect(self.flashStop)
+        #self.entered.connect(self.flashStop)
+        #self.aboutToShow.connect(self.flashStop)
+        #self.hovered.connect(self.flashStop)
+        #self.flashTimer.start(1500)
+        #self.flashTimer.singleShot(500,self.flashStart)
+    def populate_menu(self, ndLibraries):
         ## Create the items in the menu and attach functions to each one
+        
         for lib in ndLibraries:
             if not isinstance(lib, ndLibrary):
                 continue
@@ -41,17 +55,7 @@ class DataPackageMenu(qt.QMenu):
             menuItem.triggered.connect(self.libDict[name])
             #menuItem.triggered.connect(self.flashStop())
             #menuItem.triggered.connect(self.setUpLib)
-        #self.setProperty("flashing", 0)
-        self.flashTimer.timeout.connect(self.flashToggle)
-        # Triggered didnt work to stop the timer, clicked, and entered don't exist, hovered seems to work
-        # Trouble is: it floats in top left corner instead of on menu as expected.
-        #self.triggered.connect(self.flashStop)
-        #self.clicked.connect(self.flashStop)
-        #self.entered.connect(self.flashStop)
-        #self.aboutToShow.connect(self.flashStop)
-        #self.hovered.connect(self.flashStop)
-        #self.flashTimer.start(1500)
-        #self.flashTimer.singleShot(500,self.flashStart)
+        
     def flashStart(self):
         self.flashTimer.start(1500)
     def flashToggle(self):
