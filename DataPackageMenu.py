@@ -35,6 +35,7 @@ class DataPackageMenu(qt.QMenu):
         #self.hovered.connect(self.flashStop)
         #self.flashTimer.start(1500)
         #self.flashTimer.singleShot(500,self.flashStart)
+        
     def populate_menu(self, ndLibraries):
         ## Create the items in the menu and attach functions to each one
         

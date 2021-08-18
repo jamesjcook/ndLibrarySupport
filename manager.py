@@ -12,6 +12,7 @@ class manager:
             return1
         self.rootDir = rootDir
         self.categoryFilter = categoryFilter
+        self.fiducial_menu = FiducialClickerMenu()
         self.menu = None
         self.setup_library(rootDir)
         
