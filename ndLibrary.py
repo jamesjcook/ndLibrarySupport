@@ -94,6 +94,13 @@ class ndLibrary:
             #self.logger.error('error message')
             #self.logger.critical('critical message')
             self.loadEntire()
+            
+        ## UPDATE FROM HARRISON
+        ## create F.mrk.json file here and save as an ndLibrary attribute
+            ## from which you can call slicer.util.saveNode(node, filepath) at any time (when?)
+        ## load the F.mrk.json file  within AtlasController.setUpLibrary
+        self.fiducial_list = [None, None]
+        
     
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
     def loadConf1(self, file):

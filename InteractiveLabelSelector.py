@@ -172,7 +172,7 @@ class InteractiveLabelSelector:
         
         ## BAD BAD PLACEMENT -- fix this
         ## save the fiducial list on every click in the scene (this method also triggered when placing a fiducial)
-        # slicer.util.saveNode(self.library.fiducial_list[1], self.library.fiducial_list[0])
+        slicer.util.saveNode(self.library.fiducial_list[1], self.library.fiducial_list[0])
     
     ## Function that toggles the opacity of a region in the slice view
     ## Function will change the lookup table in the colors modules in Slicer to the one found in a specific library

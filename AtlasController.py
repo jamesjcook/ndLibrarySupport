@@ -61,7 +61,43 @@ class AtlasController(): ## Rename?
         self.drop3.setupLibrary(library)
         self.dropNav.setupLibrary(library)
         self.labelSelector.setupLibrary(library)
-    
+        
+        ## ADD ON FROM HARRISON
+        ## load up the desired F.mrk.json file to show and save fiducials
+        from shutil import copyfile
+        print(library)
+        #F_template = r"L:\ProjectSpace\bxd_RCCF_review\archive_dump\fiducial_template.mrk.json"
+        F_template = r"C:\Users\hmm56\Documents\F.fcsv"
+        tmp = library.conf["LibName"] + r".fcsv" 
+        #tmp = library.conf["LibName"] +r".mrk.json"
+        F_this_lib = os.path.join(library.file_loc, tmp)
+        
+        # if the scene has already loaded any fiducial lists, then remove them from the scene 
+        # this deletes them. be sure they are saved beforehand
+        markup_nodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsNode')
+        for node in markup_nodes:
+            slicer.mrmlScene.RemoveNode(node)
+        
+        # if file does not exist, then copy the template to appropriate place
+        if not os.path.isfile(F_this_lib):
+            copyfile(F_template, F_this_lib)
+        library.fiducial_list[0] = F_this_lib
+        
+        # check if scene has already loaded a fiducial list before loading another
+        #if not library.fiducial_list[1]:
+        #    library.fiducial_list[1] = slicer.util.loadMarkupsFiducialList(F_this_lib, returnNode=True)
+        #else:
+        #    slicer.util.loadMarkupsFiducialList(library.fiducial_list[0])
+        library.fiducial_list[1] = slicer.util.loadMarkupsFiducialList(F_this_lib, returnNode=True)
+        library.fiducial_list[1].SetMarkupLabelFormat("%d")
+        originTransform = library.getOriginTransform()
+        if originTransform is not None:
+            library.fiducial_list[1].SetAndObserveTransformNodeID(originTransform.GetID())
+        
+        ## SAVING is currently handled in InteractiveLabelSelector.processSliceViewClick
+        
+        ## 
+        
     ## Currently only instantiated in DataPackageMenu
     def __init__(self):
         ## Set up the layout and slice view nodes
