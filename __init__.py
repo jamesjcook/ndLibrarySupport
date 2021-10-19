@@ -5,6 +5,7 @@ import re
 import math
 import sys
 import logging
+# would be good to make qt/slicer optional so we can make broader use of code.
 import qt
 import slicer
 
@@ -64,13 +65,14 @@ for code_file in os.listdir(code_directory):
         #spec = importlib.util.spec_from_file_location(file, os.path.join(code_directory, file))
         #foo = importlib.util.module_from_spec(spec)
         #spec.loader.exec_module(foo)
+        print(code_file)
         if (sys.version_info > (3, 0)):
             exec(open(os.path.join(code_directory, code_file)).read())
         else:
             execfile(os.path.join(code_directory, code_file))
     except:
         print("Code start error in file "+code_file+" from "+code_directory)
-
+print("ndLibrarySupport import complete")
 if update_checking:
     try:
         update_available = update_check(code_directory)
