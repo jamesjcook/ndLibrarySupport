@@ -135,7 +135,7 @@ for g in groups:
         print("\n   recoloring: " + path)
         ndLibrary(None, path, template)
         # find labels in ndLibrary 
-        # find anterior commisure 
+        # find anterior commissure 
         # find color images (gqi color file) -- or any other color file 
         # if we have both of these, then measure color channels 
         # if brightest channel is green, then we want to swap red and green channels
@@ -143,6 +143,6 @@ for g in groups:
         # check for longest dimension in picture
             # usually 2x1x1 
             # longst should be green 
-            # whatever you swap it with "must" be red
+            # whatever you swap it with must (by deduction) be red
         
         
