@@ -7,7 +7,7 @@ class DataPackageMenu(qt.QMenu):
     libDict = dict()
     firstInteraction = True
     flashTimer = qt.QTimer()
-    def __init__(self, ndLibraries):
+    def __init__(self, ndLibraries, pack_name=None):
         if not isinstance(ndLibraries, list):
             print("Not a list")
             return
@@ -20,10 +20,13 @@ class DataPackageMenu(qt.QMenu):
         #button.setMenu(self);
         #mainMenuBar.addMenu(button)
         #self.initStyleSheet = self.styleSheet
-        self.title = "Data Packages"
+        if pack_name is not None:
+            self.title=pack_name+" Packages"
+        else:
+            self.title = "Data Packages"
         ## Instantiate the controller of the ndLibraryViewer
         self.controller = AtlasController()
-        self.populate_menu(ndLibraries)
+        self.populate_menu(ndLibraries,pack_name)
         #self.setProperty("flashing", 0)
         self.flashTimer.timeout.connect(self.flashToggle)
         # Triggered didnt work to stop the timer, clicked, and entered don't exist, hovered seems to work
@@ -35,10 +38,12 @@ class DataPackageMenu(qt.QMenu):
         #self.hovered.connect(self.flashStop)
         #self.flashTimer.start(1500)
         #self.flashTimer.singleShot(500,self.flashStart)
-        
-    def populate_menu(self, ndLibraries):
+    def populate_menu(self, ndLibraries, pack_name=None):
         ## Create the items in the menu and attach functions to each one
-        
+        if pack_name is not None:
+            self.title=pack_name+" Packages"
+        else:
+            self.title="Data Packages"
         for lib in ndLibraries:
             if not isinstance(lib, ndLibrary):
                 continue

@@ -32,6 +32,9 @@ class InteractiveLabelSelector:
         self.opacity_text=['No','Yes']
         #insert(through theft from data probe) label line to bottom of window
         statusBar = slicer.util.mainWindow().findChildren('QStatusBar')[0]
+        
+        self.status_label = qt.QLabel("ActiveLibrary")
+        statusBar.addWidget(self.status_label)
         regionLabel = slicer.modules.DataProbeInstance.infoWidget.layerValues["L"]
         #regionLabel.setMinimumHeight(regionLabel.minimumSizeHint.height()*2)
         #mainMenuBar = slicer.util.mainWindow().findChild("QMenuBar", "menubar")
@@ -49,6 +52,8 @@ class InteractiveLabelSelector:
         self.library=None
         if library is not None:
             self.setupLibrary(library)
+        else:
+            self.library = library
     
     ## Sets the "Hide colors" check box found just above the table of colors
     ## "Hide colors", when checked, hides any unused colors in the table of colors
@@ -67,6 +72,7 @@ class InteractiveLabelSelector:
         if library.getColorTableNode() is None:
             print("Lookup table not available")
             return
+        self.status_label.setText(library.conf["LibName"])
         self.comboBox.currentNodeID = u'' + library.getColorTableNode().GetID()
         self.setHideColorsCheckState(0)
         for row_num in range(0, self.tableView.colorModel().rowCount()):
@@ -160,6 +166,13 @@ class InteractiveLabelSelector:
         # print("Toggle: "+roi_num)
         roi_num = int(roi_num)
         self.toggleColor(roi_num)
+        # print("   IN processSliceViewClick")
+        # print(self.library.fiducial_list)
+        # print(self.library.conf["LibName"])
+        
+        ## BAD BAD PLACEMENT -- fix this
+        ## save the fiducial list on every click in the scene (this method also triggered when placing a fiducial)
+        # slicer.util.saveNode(self.library.fiducial_list[1], self.library.fiducial_list[0])
     
     ## Function that toggles the opacity of a region in the slice view
     ## Function will change the lookup table in the colors modules in Slicer to the one found in a specific library

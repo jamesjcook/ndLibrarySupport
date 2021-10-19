@@ -31,6 +31,6 @@ class manager:
         if len(libs) == 0 :
             print("error, no libs matched "+categoryFilter)
         if (self.menu is None):
-            self.menu = DataPackageMenu(libs)
+            self.menu = DataPackageMenu(libs,self.library.conf["LibName"])
         else:
-            self.menu.populate_menu(libs)
+            self.menu.populate_menu(libs,self.library.conf["LibName"])
