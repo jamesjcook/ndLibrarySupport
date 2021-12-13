@@ -35,8 +35,9 @@ def lib_start(args,template_conf):
     # if opts.help
         # print 'FILE.py -b <base_image> -e <edge_image> -o <laoprasert_out> [ -w <weighting_factor>]'
         # sys.exit()
-    lib_path=r"L:\ProjectSpace\bxd_RCCF_review"
-    lib_path = os.path.join(lib_path, opts.group)
+    #lib_path=r"L:\ProjectSpace\bxd_RCCF_review"
+    lib_path=r"/Volumes/vidconfmacspace/18.gaj.42_packs_BXD77"
+    #lib_path = os.path.join(lib_path, opts.group)
     if opts.template is not None:
         if os.path.isfile(opts.template):
             template_conf=opts.template
@@ -48,7 +49,7 @@ def lib_start(args,template_conf):
         else:
             print("Error: no template"+template_conf)
             return None
-    ndman=ndLibrarySupport.manager(lib_path,'TransformedDataPackage')
+    ndman=ndLibrarySupport.manager(lib_path,categoryFilter='TransformedDataPackage')
     return ndman
 
 
@@ -56,11 +57,12 @@ ndman=None
 if __name__ == "__main__":
     import sys
     import os
-    code_directory=r"L:\ProjectSpace\bxd_RCCF_review\code"
+    #code_directory=r"L:\ProjectSpace\bxd_RCCF_review\code"
+    code_directory=r"/Volumes/workstation_home/software/display"
     sys.path.append(code_directory)
     import ndLibrarySupport;
     # might be able to ask ndLibrarySupport for its code folder
     # Maybe the packed conf could be a hard coded data element of ndlibrary support?
     #print("Lib support code_dir <{}>".format(ndLibrarySupport.code_directory))
-    template_conf = os.path.join(ndLibrarySupport.code_directory,r"example\samba_packed_study\lib.conf")
+    template_conf = os.path.join(ndLibrarySupport.code_directory,"example","samba_packed_study","lib.conf")
     ndman=lib_start(sys.argv[1:],template_conf)
