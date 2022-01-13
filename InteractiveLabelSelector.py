@@ -170,6 +170,8 @@ class InteractiveLabelSelector:
         # print(self.library.fiducial_list)
         # print(self.library.conf["LibName"])
         
+        if "AnnotationMode" not in self.library.conf:
+            return
         ## BAD BAD PLACEMENT -- fix this
         ## save the fiducial list on every click in the scene (this method also triggered when placing a fiducial)
         slicer.util.saveNode(self.library.fiducial_list[1], self.library.fiducial_list[0])

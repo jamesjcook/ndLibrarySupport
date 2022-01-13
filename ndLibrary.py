@@ -5,6 +5,7 @@ import sys
 import os
 import re
 import logging
+from unittest.mock import NonCallableMagicMock
 
 import ndLibrarySupport
 
@@ -527,27 +528,43 @@ class ndLibrary:
             parent_lib.labelVolume = self
             parent_lib = parent_lib.parent
     
-    ## Function that loads the transform for the volume node
+    ## Function that figures out path to transform for this library
+    ## does not load the transform
     ## originTransform is a tuple with two elements
     ## Element 0 is the file path for the transform
     ## Element 1 is the transform node in 3D Slicer
     def loadOriginTransform(self):
         if not "OriginTransform" in self.conf:
-            #print("No path to follow for origin transform")
+            print("origin transform not specified {}".format(self.conf["LibName"]))
             return
         if self.originTransform is not None:
-            #print("Track transform is already loaded")
+            print("origin transform already discovered {}".format(self.conf["LibName"]))
             return
         self.jumpToDir()
         # CANT BE BOTHERD TO SORT THIS OUT SMART(right now)
         originPath = self.conf["OriginTransform"]
-        winnie_path = self.conf["OriginTransform"].replace("/","\\")
-        nix_path = self.conf["OriginTransform"].replace("\\","/").replace("//","/")
-        if not os.path.isdir(originPath) and os.path.isdir(winnie_path):
-            originPath = winnie_path
-        if not os.path.isdir(originPath) and os.path.isdir(nix_path):
-            originPath = nix_path
+        #winnie_path = self.conf["OriginTransform"].replace("/","\\")
+        #nix_path = self.conf["OriginTransform"].replace("\\","/").replace("//","/")
+        transform_dir=None
+        if not os.path.isfile(originPath):
+            # split any path elements off origin path so we know what we are doing
+            transform_dir=os.path.dirname(originPath)
+            filter = os.path.basename(originPath)
+            if not os.path.isabs(transform_dir):
+                transform_dir = os.path.join(os.getcwd(),transform_dir)
+            # stolen from library loading, need to update
+            try:
+                transforms = [f for f in os.listdir(transform_dir) if re.match(r''+filter, f) and not os.path.isdir(os.path.join(transform_dir,f))]
+                originPath = os.path.join(transform_dir,transforms[0])
+                if len(transforms) > 1:
+                    self.logger.warning("found multiple transforms matching " + filter +" in "+transform_dir)
+            except re.error:
+                self.logger.warning("cannot find origin transform matching " + filter +" in "+transform_dir)
+                return
+
         if os.path.isfile(originPath):
+            # TODO: fully comprehend the follwoingg path cleanup code
+            # looks totally redundant to new regex handling code above
             # fully resolve the originPath so we can find by path.
             relD=os.path.dirname(originPath)
             if not relD:
@@ -557,6 +574,11 @@ class ndLibrary:
                 originPath = os.path.join(os.getcwd(), os.path.basename(originPath))
             if os.path.isfile(originPath):
                 self.originTransform = (originPath, None)
+                # WARNING: this breaks config saving through simplify.
+                # do we care about maintainigng regex transform in simplify?
+                # this would also bust saving config because it would stop being a relative path
+                self.conf["OriginTransform"] = originPath
+                print("origin transform resolved {} {}".format(self.conf["LibName"], originPath))
                 #ot=self.getOriginTransform()
             else:
                 self.jumpToDir()
@@ -564,16 +586,19 @@ class ndLibrary:
             #if self.parent is not None and self.parent.originTransform is not None and self.parent.originTransform[1] is not None:
             #    ot.SetAndObserveTransformNodeID(self.parent.originTransform[1].GetID())
         else:
-            print("Error on transform resolution:"+originPath+" in "+self.conf_dir)
+            print("Error on transform resolution:"+originPath+" in "+transform_dir)
     ## Returns the origin transform for a given volume
     ## Loads the transform into Slicer if it has not been loaded yet
-    def getOriginTransform(self):
+    def getOriginTransform(self, recurse=False):
         if self.originTransform is not None:
             ancestors=self.ancestorList(True)
-            tformStashLib = ancestors[-1]
-            if tformStashLib is not None and self.originTransform[0] in tformStashLib.transforms:
-                self.originTransform = (self.originTransform[0], tformStashLib.transforms[self.originTransform[0]])
-            if self.originTransform[1] is None:
+            oldest_ancestor_lib = ancestors[-1]
+            # check if transform was previously loaded by a different library to prevent reloads
+            # topmost level lib maintains a dict of all transforms ever
+            if oldest_ancestor_lib is not None and self.originTransform[0] in oldest_ancestor_lib.transforms:
+                self.originTransform = (self.originTransform[0], oldest_ancestor_lib.transforms[self.originTransform[0]])
+            # if transfomr has not yet been loaded (because element [1] is loaded mrml node (pointer to object in slicer))
+            if self.originTransform[1] is None: 
                 if (sys.version_info > (3, 0)):
                     # slicer py3 call, nightlies, and future next release
                     transformNode = slicer.util.loadTransform(self.originTransform[0])
@@ -584,9 +609,21 @@ class ndLibrary:
                         transformNode = None
                 if transformNode is not None:
                     self.originTransform = (self.originTransform[0], transformNode)
-                    tformStashLib.transforms[self.originTransform[0]] = transformNode
+                    oldest_ancestor_lib.transforms[self.originTransform[0]] = transformNode
                 else:
                     print("Failed to load transform:"+self.originTransform[0]+" from "+self.conf_dir)
+            if self.originTransform[1] is None: 
+                return None
+            # stack transforms in reverse order
+            transform=self.originTransform[1]
+            for a in ancestors:
+                if a.originTransform is not None and recurse:
+                    print(a.conf["LibName"])
+                    ancestor_transform = a.getOriginTransform()
+                    if ancestor_transform is not None and ancestor_transform is not transform:
+                        print("\tattaching transform to "+ancestor_transform.GetName())
+                        transform.SetAndObserveTransformNodeID(ancestor_transform.GetID())
+                        transform=ancestor_transform
             return self.originTransform[1]
         return None
     
@@ -633,7 +670,7 @@ class ndLibrary:
                     volNode = None
             if volNode is not None:
                 self.volDict[key] = (self.volDict[key][0], volNode)
-                originTransform = self.getOriginTransform()
+                originTransform = self.getOriginTransform(recurse=True)
                 if originTransform is not None:
                     volNode.SetAndObserveTransformNodeID(originTransform.GetID())
                 if ctbl is not None:
@@ -721,7 +758,7 @@ class ndLibrary:
                 self.labelVolume = (self.labelVolume[0], labelVolumeNode)
                 labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
                 labelVolumeNode.GetDisplayNode().SetAndObserveColorNodeID(self.getColorTableNode().GetID())
-                originTransform = self.getOriginTransform()
+                originTransform = self.getOriginTransform(recurse=True)
                 if originTransform is not None:
                     labelVolumeNode.SetAndObserveTransformNodeID(originTransform.GetID())
             else:

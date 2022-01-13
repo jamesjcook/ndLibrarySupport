@@ -62,6 +62,8 @@ class AtlasController(): ## Rename?
         self.dropNav.setupLibrary(library)
         self.labelSelector.setupLibrary(library)
         
+        if "AnnotationMode" not in library.conf:
+            return
         ## ADD ON FROM HARRISON
         ## load up the desired F.mrk.json file to show and save fiducials
         from shutil import copyfile
