@@ -1,20 +1,20 @@
 ## For the functions of the 2D atlas that allow you to click on regions of the brain
 ## and toggle a label outline over that region
 ## Author: Austin Kao
+import slicer
+import qt
+from ndLibrary import ndLibrary
 
 class InteractiveLabelSelector:
     ## library specifies the ndLibrary the InteractiveLabelSelector is supposed to manage labels for
-    ## nodeTag is the tag of the slice node that the push buttons are supposed to reside in
+    ## node_tag is the tag of the slice node that the push buttons are supposed to reside in
     ## Use the Colors module in 3D Slicer to toggle the opacity of a specific label
     ## allPushButton is a button that will make all relevant labels visible
     ## nonePushButton is a button that will make all relevant labels invisible
     ## Adds a "Visible" column to the table of colors found in the Colors module
-    def __init__(self, library, nodeTag):
-        if not isinstance(nodeTag, str):
+    def __init__(self, library, node_tag):
+        if not isinstance(node_tag, str):
             print("Tag is not a string")
-            return
-        if slicer.app.layoutManager().sliceWidget(nodeTag) is None:
-            print("Invalid tag")
             return
         widget = slicer.modules.colors.widgetRepresentation()
         frame1 = widget.findChild("QFrame")
@@ -41,19 +41,12 @@ class InteractiveLabelSelector:
         statusBar.addWidget(regionLabel)
         statusBar.setMinimumHeight(statusBar.height*2.1)
         #mainMenuBar.addWidget(statusBar)
-        qtLayout = slicer.app.layoutManager().sliceWidget(nodeTag).layout()
-        self.nodeTag = nodeTag
-        qtLayout.addWidget(self.allPushButton)
-        qtLayout.addWidget(self.nonePushButton)
-        sliceNames = slicer.app.layoutManager().sliceViewNames()
-        for sliceTag in sliceNames:
-            sliceNodeInteractor = slicer.app.layoutManager().sliceWidget(sliceTag).sliceView().interactor()
-            sliceNodeInteractor.AddObserver('LeftButtonReleaseEvent', self.processSliceViewClick)
+
+        self.node_tag = node_tag
+        
         self.library=None
         if library is not None:
             self.setupLibrary(library)
-        else:
-            self.library = library
     
     ## Sets the "Hide colors" check box found just above the table of colors
     ## "Hide colors", when checked, hides any unused colors in the table of colors
@@ -69,6 +62,16 @@ class InteractiveLabelSelector:
             print("Invalid library used")
             return
         self.library = library
+        if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
+            print("Cannot setup library for InteractiveLabelSelector, Tag {} does not exist".format(self.node_tag))
+            return
+        qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
+        qtLayout.addWidget(self.allPushButton)
+        qtLayout.addWidget(self.nonePushButton)
+        sliceNames = slicer.app.layoutManager().sliceViewNames()
+        for sliceTag in sliceNames:
+            sliceNodeInteractor = slicer.app.layoutManager().sliceWidget(sliceTag).sliceView().interactor()
+            sliceNodeInteractor.AddObserver('LeftButtonReleaseEvent', self.processSliceViewClick)
         if library.getColorTableNode() is None:
             print("Lookup table not available")
             return

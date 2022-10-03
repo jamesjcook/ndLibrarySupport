@@ -1,22 +1,20 @@
 ## Class for a volume selection dropdown menu for the 2D Atlas
 ## Based on code from Dropdowns.py for FiberCompareView
 ## Author: Austin Kao
+import qt
+import slicer
+from ndLibrary import ndLibrary
 
-class volumeDropdown(qt.QComboBox):
+class VolumeDropdown(qt.QComboBox):
     ## library is the ndLibrary used to store the locations of the volumes in the dropdown
     ## Make sure library contains the relative path to the volumes
-    ## nodeTag is the string tag that identifies the slice view tag the dropdown is in
-    def __init__(self, library, nodeTag):
-        if not isinstance(nodeTag, str):
+    ## node_tag is the string tag that identifies the slice view tag the dropdown is in
+    def __init__(self, library, node_tag):
+        if not isinstance(node_tag, str):
             print("Tag is not a string")
             return
-        if slicer.app.layoutManager().sliceWidget(nodeTag) is None:
-            print("Tag does not exist")
-            return
         super(qt.QComboBox, self).__init__()
-        self.nodeTag = nodeTag
-        qtLayout = slicer.app.layoutManager().sliceWidget(nodeTag).layout()
-        qtLayout.addWidget(self)
+        self.node_tag = node_tag
         self.addItem(r"<To begin, select Data Package from menu of main application>")
         self.libDict = dict()
         self.activated.connect(self.changeVolume)
@@ -41,10 +39,10 @@ class volumeDropdown(qt.QComboBox):
         #print(self.libDict[name])
         if name not in self.libDict:
             return
-        compString = "vtkMRMLSliceCompositeNode"+str(self.nodeTag)
-        #sliceString = "vtkMRMLSliceNode"+str(self.nodeTag)
+        compString = "vtkMRMLSliceCompositeNode{}".format(str(self.node_tag))
+        #sliceString = "vtkMRMLSliceNode"+str(self.node_tag)
         compNode = slicer.app.mrmlScene().GetNodeByID(compString)
-        self.statusMessage = "loading "+name+" ..."
+        self.statusMessage = "loading {} ...".format(name)
         slicer.util.showStatusMessage(self.statusMessage)
         self.setItemText(index,self.statusMessage)
         slicer.util.mainWindow().update()
@@ -57,7 +55,7 @@ class volumeDropdown(qt.QComboBox):
         #    volNode = self.volDict[key][1]
         
         if type(self.libDict[name]) is tuple:
-            print("error on "+name+" select, coder is off their rocker and passed tuple instead of ndLibrary")
+            print("error on {} select, coder is off their rocker and passed tuple instead of ndLibrary".format(name))
             return
         volNode = self.libDict[name].get_volume_node(name)
         if volNode is not None:
@@ -76,12 +74,12 @@ class volumeDropdown(qt.QComboBox):
         #self.loadSignal.stop()
         if not self.viewSet:
             #slicer.app.layoutManager().resetSliceViews()
-            sliceWidget = slicer.app.layoutManager().sliceWidget(self.nodeTag)
+            sliceWidget = slicer.app.layoutManager().sliceWidget(self.node_tag)
             sliceWidget.fitSliceToBackground()
             # Avoid starting at midline display for Navigator because of label transformation effects
             nW=slicer.app.layoutManager().sliceWidget("Navigator")
             val=nW.sliceController().sliceOffsetSlider().value
-            #if "Navigator" in self.nodeTag:
+            #if "Navigator" in self.node_tag:
             if abs(val) < 0.250:
                 nW.sliceController().setSliceOffsetValue(0.250)
             self.viewSet = True
@@ -97,6 +95,11 @@ class volumeDropdown(qt.QComboBox):
             print("Not a library")
             return
         self.clear()
+        if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
+            print("Cannot setup library for VolumeDropdown, Tag {} does not exist".format(self.node_tag))
+            return
+        qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
+        qtLayout.addWidget(self)
         self.library = library
         self.addItem(r"<Click here to select data volume>")
         volset = library.getEntireVolumeSet().copy()

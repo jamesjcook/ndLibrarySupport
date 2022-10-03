@@ -1,6 +1,8 @@
 ## Layout specifications for ndLibraryViewer
 ## Based on code originally written by Alex Sheu
 ## Modified by Austin Kao
+import slicer
+import qt
 
 if "custom_layouts" not in locals():
     custom_layouts=dict()

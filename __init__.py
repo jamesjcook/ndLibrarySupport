@@ -6,13 +6,22 @@ import math
 import sys
 import logging
 # would be good to make qt/slicer optional so we can make broader use of code.
-import qt
-import slicer
+# import qt
+# import slicer
+
+from manager import manager
+from AtlasController import AtlasController
+from DataPackageMenu import DataPackageMenu
+from FiducialClickerMenu import FiducialClickerMenu
+from conf import conf
 
 # currently disabled because the update work is unfinished.
 update_checking = False
-
+"""
 code_directory = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(code_directory))
+from ndLibrarySupport import *
+"""
 
 def update_check(code_directory,remote_name='origin'):
     try:
@@ -50,6 +59,8 @@ def code_update(repo):
     # git 
     return
 
+# TODO: this is the wrong way to setup the code library. learn how to
+"""
 ## Find code and execute it
 print("ndLibrarySupport: setup code from "+code_directory)
 code_file=''
@@ -84,6 +95,4 @@ if update_checking:
     except:
         # our update check should absolutely not prevent running, ever.
         pass
-
-
-
+"""

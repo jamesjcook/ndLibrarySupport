@@ -2,6 +2,9 @@
 ## Based on code originally written by Alex Sheu
 ## Modified by Austin Kao
 
+import slicer
+import qt
+
 ## To load a new transform, update code in AtlasController.py
 if "custom_layouts" not in locals():
     custom_layouts=dict()

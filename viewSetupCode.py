@@ -2,7 +2,7 @@
 ## We dont know how we want to create a class for view protocol handling,
 ## So we're throwing loose helper functions in here for now.
 
-
+import slicer
 
 ## Function that links Compare1 and Compare2 slice view nodes
 def setSliceNodeLinks(value):

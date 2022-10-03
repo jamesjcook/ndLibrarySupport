@@ -1,5 +1,10 @@
 ## Class for a dropdown menu that lists all the data packages available for an atlas
 ## Author: Austin Kao
+import qt
+import slicer
+
+from AtlasController import AtlasController
+from ndLibrary import ndLibrary
 
 class DataPackageMenu(qt.QMenu):
     ## ndLibraries is the list of ndLibraries to be displayed in the data package menu
@@ -7,8 +12,8 @@ class DataPackageMenu(qt.QMenu):
     libDict = dict()
     firstInteraction = True
     flashTimer = qt.QTimer()
-    def __init__(self, ndLibraries, pack_name=None):
-        if not isinstance(ndLibraries, list):
+    def __init__(self, list_of_libraries, pack_name=None):
+        if not isinstance(list_of_libraries, list):
             print("Not a list")
             return
         super(qt.QMenu, self).__init__()
@@ -25,8 +30,10 @@ class DataPackageMenu(qt.QMenu):
         else:
             self.title = "Data Packages"
         ## Instantiate the controller of the ndLibraryViewer
+        # TODO: two cobntrollers? based off of a setting in lib.conf, sensitivity to a child library called Atlas 
+        # if i have an atlas child node, then make a second controller
         self.controller = AtlasController()
-        self.populate_menu(ndLibraries,pack_name)
+        self.populate_menu(list_of_libraries,pack_name)
         #self.setProperty("flashing", 0)
         self.flashTimer.timeout.connect(self.flashToggle)
         # Triggered didnt work to stop the timer, clicked, and entered don't exist, hovered seems to work
@@ -38,13 +45,13 @@ class DataPackageMenu(qt.QMenu):
         #self.hovered.connect(self.flashStop)
         #self.flashTimer.start(1500)
         #self.flashTimer.singleShot(500,self.flashStart)
-    def populate_menu(self, ndLibraries, pack_name=None):
+    def populate_menu(self, list_of_libraries, pack_name=None):
         ## Create the items in the menu and attach functions to each one
         if pack_name is not None:
             self.title=pack_name+" Packages"
         else:
             self.title="Data Packages"
-        for lib in ndLibraries:
+        for lib in list_of_libraries:
             if not isinstance(lib, ndLibrary):
                 continue
             name = lib.file_loc

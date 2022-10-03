@@ -1,3 +1,11 @@
+import os
+from FiducialClickerMenu import FiducialClickerMenu
+from DataPackageMenu import DataPackageMenu
+from ndLibrary import ndLibrary
+from viewNavigatorAnd2DCompare import *
+from viewNavigatorWithLoadAnd2DCompare import *
+from viewNavigatorAndTallAxial import *
+from viewSetupCode import *
 ## ndLibrarySupport manager class
 ## to create base library, and menu object.
 ## Also prompts user to get them started.
@@ -6,16 +14,25 @@ class manager:
     #logger = logging.getLogger('ndLibrarySupport')
     #logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)6d %(threadName)s %(message)s')
     def __init__(self,rootDir,categoryFilter=r'Species'):
+
         if not os.path.isdir(rootDir):
             print("Please specify a valid path")
             print(rootDir)
-            return1
+            return 1
         self.rootDir = rootDir
         self.categoryFilter = categoryFilter
         self.fiducial_menu = FiducialClickerMenu()
         self.menu = None
         self.setup_library(rootDir)
-        
+        # TODO: setup view code 
+        loadNavigatorAnd2DCompare()
+        loadNavigatorWithLoadAnd2DCompare()
+        loadNavigatorAndTallAxial()
+        setNavigatorWithLoadAnd2DCompare()
+        setNavigatorAnd2DCompare()
+        setNavigatorAndTallAxial()
+        setLabelOutlineAtlas(1)
+        setSliceNodeLinks(1)
         slicer.util.messageBox("Click "+self.menu.title+" menu to begin")
         #self.menu.setProperty("flashing", 0)
         
@@ -29,7 +46,7 @@ class manager:
         # self.menu = DataPackageMenu(self.library.getRelevantStrainList())
         # new uses configurable category filter internal.
         if len(libs) == 0 :
-            print("error, no libs matched "+categoryFilter)
+            print("error, no libs matched {}".format(self.categoryFilter))
         if (self.menu is None):
             self.menu = DataPackageMenu(libs,self.library.conf["LibName"])
         else:

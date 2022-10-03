@@ -7,7 +7,9 @@ import re
 import logging
 from unittest.mock import NonCallableMagicMock
 
-import ndLibrarySupport
+#import ndLibrarySupport
+import slicer
+from conf import conf 
 
 class ndLibrary:        
     ## Constructor for a ndLibrary
@@ -60,7 +62,7 @@ class ndLibrary:
             del self.conf["ChildCategory"]
             del self.conf["LibName"]
         elif parent is None:
-            self.conf = ndLibrarySupport.conf("blank")
+            self.conf = conf("blank")
             pass
         else:
             print("Parent is invalid")
@@ -201,7 +203,7 @@ class ndLibrary:
             par_conf=self.conf.copy() 
             #par_conf["Category"]=par_conf["ChildCategory"]
             #del par_conf["ChildCategory"]
-            self.conf = ndLibrarySupport.conf(conf_path,self.conf_file_name,par_conf)
+            self.conf = conf(conf_path,self.conf_file_name,par_conf)
             if "LibName" not in self.conf:
                 libName = os.path.basename(self.file_loc)
                 ext = re.match(r''+self.extReg, libName)

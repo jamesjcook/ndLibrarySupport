@@ -11,22 +11,27 @@ def test(properties):
     print(properties)
 '''
 
+import qt
+import slicer
+
 class ExternalLoadButton(qt.QPushButton):
-    ## nodeTag is the tag of the node the button is placed in
-    def __init__(self, nodeTag):
+    ## node_tag is the tag of the node the button is placed in
+    def __init__(self, node_tag):
         super(qt.QPushButton, self).__init__()
         self.text = "Load External Volume"
         self.released.connect(self.loadExternalVolume)
-        self.nodeTag = nodeTag
-        slicer.app.layoutManager().sliceWidget(nodeTag).layout().addWidget(self)
+        self.node_tag = node_tag
+        #slicer.app.layoutManager().sliceWidget(node_tag).layout().addWidget(self)
     
     ## Function to load an external volume that the user chooses
     ## Currently lets user load in nodes like normal, then sets the scene so that loaded volume appears only
     ## in the external load node (whereever the button is located)
     def loadExternalVolume(self):
+        # hack! ? 
+        slicer.app.layoutManager().sliceWidget(self.node_tag).layout().addWidget(self)
         compNodes = slicer.app.mrmlScene().GetNodesByClass("vtkMRMLSliceCompositeNode")
         volumes = dict()
-        externalLoadID = "vtkMRMLSliceCompositeNode"+str(self.nodeTag)
+        externalLoadID = "vtkMRMLSliceCompositeNode"+str(self.node_tag)
         for node in compNodes:
             if node.GetID() != externalLoadID:
                 volumes[node] = (node.GetBackgroundVolumeID(), node.GetForegroundVolumeID(), node.GetLabelVolumeID())

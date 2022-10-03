@@ -12,7 +12,9 @@
 #TransformedDataPackage
 
 #D:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script H:\code\ndLibrarySupport\Testing\test_simplified_rat.py
-
+import sys
+import os
+from manager import manager
 
 
 def lib_start(args,template_conf):
@@ -25,6 +27,7 @@ def lib_start(args,template_conf):
                       # action="store_false", dest="verbose", default=True,
                       # help="don't print status messages to stdout")
     parser.add_option("-g", "--group", action="store", type="string", dest='group',default='')
+    parser.add_option("-l", "--library", "--lib_path", action="store", type="string", dest='lib_path',default='')
     parser.add_option("-t", "--template", action="store", type="string", dest='template',default='')
     try:
         (opts, args) = parser.parse_args(args)
@@ -36,33 +39,34 @@ def lib_start(args,template_conf):
         # print 'FILE.py -b <base_image> -e <edge_image> -o <laoprasert_out> [ -w <weighting_factor>]'
         # sys.exit()
     #lib_path=r"L:\ProjectSpace\bxd_RCCF_review"
-    lib_path=r"/Volumes/vidconfmacspace/18.gaj.42_packs_BXD77"
+    # TODO: no hardcoding, definitley not pointing to vidconfmac
+    #opts.lib_path=r"/Volumes/vidconfmacspace/18.gaj.42_packs_BXD77"
     #lib_path = os.path.join(lib_path, opts.group)
     if opts.template is not None:
         if os.path.isfile(opts.template):
             template_conf=opts.template
         else:
             print("Not using template opt because <{}> not file".format(opts.template))
-    if not os.path.isfile(os.path.join(lib_path, r'lib.conf')):
+
+    if not os.path.isfile(os.path.join(opts.lib_path, r'lib.conf')):
         if os.path.isfile(os.path.join(template_conf)):
-            copyfile(template_conf, os.path.join(lib_path, r'lib.conf'))
+            copyfile(template_conf, os.path.join(opts.lib_path, r'lib.conf'))
         else:
             print("Error: no template"+template_conf)
             return None
-    ndman=ndLibrarySupport.manager(lib_path,categoryFilter='TransformedDataPackage')
+    ndman=manager(opts.lib_path,categoryFilter='TransformedDataPackage')
     return ndman
 
 
 ndman=None
 if __name__ == "__main__":
-    import sys
-    import os
-    #code_directory=r"L:\ProjectSpace\bxd_RCCF_review\code"
-    code_directory=r"/Volumes/workstation_home/software/display"
-    sys.path.append(code_directory)
-    import ndLibrarySupport;
+    code_directory = os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(os.path.dirname(code_directory))
+    import ndLibrarySupport
+    print(code_directory)
+    #from conf import conf
     # might be able to ask ndLibrarySupport for its code folder
     # Maybe the packed conf could be a hard coded data element of ndlibrary support?
     #print("Lib support code_dir <{}>".format(ndLibrarySupport.code_directory))
-    template_conf = os.path.join(ndLibrarySupport.code_directory,"example","samba_packed_study","lib.conf")
+    template_conf = os.path.join(code_directory,"example","samba_packed_study","lib.conf")
     ndman=lib_start(sys.argv[1:],template_conf)
