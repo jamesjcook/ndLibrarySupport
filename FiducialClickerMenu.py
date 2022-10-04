@@ -10,7 +10,7 @@ import copy
 class FiducialClickerMenu(qt.QMenu):
     def __init__(self): 
         super(qt.QMenu, self).__init__()
-        mainWindow = slicer.app.activeWindow()
+        mainWindow = slicer.util.mainWindow()
         mainMenuBar = mainWindow.findChild("QMenuBar", "menubar")
         #mainMenuBar.addMenu(self)
         #self.title = r'Fiducial Clicker'

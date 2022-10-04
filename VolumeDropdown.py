@@ -4,6 +4,7 @@
 import qt
 import slicer
 from ndLibrary import ndLibrary
+import re
 
 class VolumeDropdown(qt.QComboBox):
     ## library is the ndLibrary used to store the locations of the volumes in the dropdown
@@ -27,6 +28,7 @@ class VolumeDropdown(qt.QComboBox):
         #self.loadSigI = 0
         self.statusMessage = ""
         self.viewSet = False
+        self.compNode = None
     
     ## Function that will change the volume image being looked at
     ## Because of how the dropdown menu is set up, any entry in volDict should at least have a file path
@@ -41,7 +43,7 @@ class VolumeDropdown(qt.QComboBox):
             return
         compString = "vtkMRMLSliceCompositeNode{}".format(str(self.node_tag))
         #sliceString = "vtkMRMLSliceNode"+str(self.node_tag)
-        compNode = slicer.app.mrmlScene().GetNodeByID(compString)
+        self.compNode = slicer.app.mrmlScene().GetNodeByID(compString)
         self.statusMessage = "loading {} ...".format(name)
         slicer.util.showStatusMessage(self.statusMessage)
         self.setItemText(index,self.statusMessage)
@@ -59,7 +61,7 @@ class VolumeDropdown(qt.QComboBox):
             return
         volNode = self.libDict[name].get_volume_node(name)
         if volNode is not None:
-            compNode.SetBackgroundVolumeID(volNode.GetID())
+            self.compNode.SetBackgroundVolumeID(volNode.GetID())
             self.statusMessage = ""
             self.setItemText(index,name)
         else:
@@ -67,9 +69,9 @@ class VolumeDropdown(qt.QComboBox):
             self.setItemText(index,self.statusMessage)
         slicer.util.showStatusMessage(self.statusMessage)
         if self.libDict[name].getLabelVolume() is not None:
-            compNode.SetReferenceLabelVolumeID(self.libDict[name].getLabelVolume().GetID())
+            self.compNode.SetReferenceLabelVolumeID(self.libDict[name].getLabelVolume().GetID())
         elif self.library.getLabelVolume() is not None:
-            compNode.SetReferenceLabelVolumeID(self.library.getLabelVolume().GetID())
+            self.compNode.SetReferenceLabelVolumeID(self.library.getLabelVolume().GetID())
         #killtimer?
         #self.loadSignal.stop()
         if not self.viewSet:
@@ -78,10 +80,11 @@ class VolumeDropdown(qt.QComboBox):
             sliceWidget.fitSliceToBackground()
             # Avoid starting at midline display for Navigator because of label transformation effects
             nW=slicer.app.layoutManager().sliceWidget("Navigator")
-            val=nW.sliceController().sliceOffsetSlider().value
-            #if "Navigator" in self.node_tag:
-            if abs(val) < 0.250:
-                nW.sliceController().setSliceOffsetValue(0.250)
+            if nW is not None:
+                val=nW.sliceController().sliceOffsetSlider().value
+                #if "Navigator" in self.node_tag:
+                if abs(val) < 0.250:
+                    nW.sliceController().setSliceOffsetValue(0.250)
             self.viewSet = True
     # interface is DISABLED while loading so this is not possible
     # Maybe slicer.util.mainWindow().update() will force re-draw?
@@ -122,3 +125,13 @@ class VolumeDropdown(qt.QComboBox):
         for key in volset:
             self.addItem(key)
             self.libDict[key] = library
+            # if this matches autoload, then load this one now
+            if "StartupLoad" in self.library.conf and re.match(self.library.conf["StartupLoad"],key):
+                self.changeVolume(self.count-1)
+
+
+    def clear_view(self):
+        if self.compNode:
+            self.compNode.SetBackgroundVolumeID("None")
+            self.compNode.SetForegroundVolumeID("None")
+            self.compNode.SetLabelVolumeID("None")

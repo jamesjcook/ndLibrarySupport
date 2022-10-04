@@ -12,14 +12,12 @@ class DataPackageMenu(qt.QMenu):
     libDict = dict()
     firstInteraction = True
     flashTimer = qt.QTimer()
-    def __init__(self, list_of_libraries, pack_name=None):
+    def __init__(self, list_of_libraries, menu_bar, pack_name=None, view_names=None):
         if not isinstance(list_of_libraries, list):
             print("Not a list")
             return
         super(qt.QMenu, self).__init__()
-        mainWindow = slicer.app.activeWindow()
-        mainMenuBar = mainWindow.findChild("QMenuBar", "menubar")
-        mainMenuBar.addMenu(self)
+        menu_bar.addMenu(self)
         # attempte to add qpushbutton direct fails.
         #button = qt.QPushButton
         #button.setMenu(self);
@@ -32,7 +30,8 @@ class DataPackageMenu(qt.QMenu):
         ## Instantiate the controller of the ndLibraryViewer
         # TODO: two cobntrollers? based off of a setting in lib.conf, sensitivity to a child library called Atlas 
         # if i have an atlas child node, then make a second controller
-        self.controller = AtlasController()
+        # atlas controller takes a list (no list mneans all)
+        self.controller = AtlasController(view_names)
         self.populate_menu(list_of_libraries,pack_name)
         #self.setProperty("flashing", 0)
         self.flashTimer.timeout.connect(self.flashToggle)
@@ -60,6 +59,7 @@ class DataPackageMenu(qt.QMenu):
             elif "LibName" in lib.conf:
                 name = lib.conf["LibName"]
             menuItem = qt.QAction(name, self)
+            print("menu item name is {}".format(menuItem))
             self.addAction(menuItem)
             ## Define a function for the menu item to execute when selected
             ## MUST must be a lambda for this to work

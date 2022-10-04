@@ -33,6 +33,9 @@ class AtlasController(): ## Rename?
             self.library = list_of_libraries
         ## Add additional view setups if appropriate
         tract_path = os.path.join(self.library.Path,"tractography.mrml")
+
+
+        # somewhere in here is the problem
         if os.path.isfile(tract_path):
             if "TractographyDisplay" not in slicer.util.moduleNames():
                 self.tractography_prompt()
@@ -49,10 +52,17 @@ class AtlasController(): ## Rename?
                 slicer.util.moduleSelector().selectModule("TractographyDisplay")
                 slicer.util.moduleSelector().selectModule("Models")
                 self.modulepanel.setVisible(v)
+                
         ## set viewer orientation
         custom_orient=dict()
         orient_keys=["CompareOrientation","NavigatorOrientation"]
         for orient_key in orient_keys:
+            if orient_key in self.library.conf:
+                ok=orient_key.replace("Orientation","")
+                custom_orient[ok]=self.library.conf[orient_key]
+        
+        for view in self.view_names:
+            orient_key = "{}Orientation".format(view)
             if orient_key in self.library.conf:
                 ok=orient_key.replace("Orientation","")
                 custom_orient[ok]=self.library.conf[orient_key]
@@ -63,18 +73,29 @@ class AtlasController(): ## Rename?
                     node.SetOrientation(custom_orient[opt])
             node.GetSingletonTag()
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+        self.clear_views()
         ## "Clear" the scene
-        for node in compNodes:
+        """for node in compNodes:
             node.SetBackgroundVolumeID("None")
             node.SetForegroundVolumeID("None")
-            node.SetLabelVolumeID("None")
+            node.SetLabelVolumeID("None")"""
+
+
+
+
+
         ## Update each GUI element accordingly
         # TODO: this is where ndlibraries for each slice view are set
-        self.drop1.setupLibrary(self.library)
+        # drop 123 are bad names
+        # this function should take in a list of drop menus to populate
+        # this one is told to do things, does not make decisinos
+        for dropdown in self.list_of_VolumeDropdowns:
+            dropdown.setupLibrary(self.library)
+        """self.drop1.setupLibrary(self.library)
         self.drop2.setupLibrary(self.library)
         self.drop3.setupLibrary(self.library)
         self.dropNav.setupLibrary(self.library)
-        self.labelSelector.setupLibrary(self.library)
+        self.labelSelector.setupLibrary(self.library)"""
         
         if "AnnotationMode" not in self.library.conf:
             return
@@ -117,7 +138,9 @@ class AtlasController(): ## Rename?
         ## 
 
     ## Currently only instantiated in DataPackageMenu
-    def __init__(self):
+    # now also instantiates a 2nd instance in manager.py to control the atlas view (for comparison)
+    def __init__(self, view_names=None):
+        self.setup_lib_counter = 0
         ## Set up the layout and slice view nodes
         """loadNavigatorAnd2DCompare()
         loadNavigatorWithLoadAnd2DCompare()
@@ -128,40 +151,32 @@ class AtlasController(): ## Rename?
         setLabelOutlineAtlas(1)
         setSliceNodeLinks(1)"""
         self.library = None
+        self.view_names = view_names
         ## Set up GUI elements
         # TODO: currently, each slice view has its own volumeDropdown
             # each volumeDropdown can have its own ndLibrary (the None argument here)
             # when we instantiate the volumeDropdowns, we just need to attach the appropriate ndLibrary (specimen on left, atlas on right)
-        self.drop1 = VolumeDropdown(None, "Compare1")
+        # extend atlascontroller to contain a list of drop downs
+        # self.drop_menus is a list of these
+        # get passed a list of dtrings for who to setup, based upon the VolumeDropdown id name (like Compare1 or Axial)
+            # names are set by viewNavigatorWith...
+            # view_names are the list to update thism with
+            # a list of who this controller is going to control
+        self.list_of_VolumeDropdowns = []
+        for view in view_names:
+            self.list_of_VolumeDropdowns.append(VolumeDropdown(None, view))
+
+        """self.drop1 = VolumeDropdown(None, "Compare1")
         self.drop2 = VolumeDropdown(None, "Compare2")
         self.drop3 = VolumeDropdown(None, "Axial")
-        self.dropNav = VolumeDropdown(None, "Navigator")
-        self.externalLoad = ExternalLoadButton("Load")
-        self.labelSelector = InteractiveLabelSelector(None, "Navigator")
-        self.angleSlider = AngleSlider("Navigator", "Compare1", "Compare2")
-        ## Modify Slicer's main window
-        ## Hide toolbars
-        ## Set mouse interaction mode if its available
-        ## Hides Python Interactor, module panel
-        ## Makes slice intersections visible
-        ## May be better to move this code outside the controller?
-        mainWindow = slicer.util.mainWindow()
-        for toolbar in mainWindow.findChildren("QToolBar"):
-            toolbar.setVisible(0)
-            if "Mouse" in toolbar.name:
-                self.mouseToolbar = toolbar
-                #print(toolbar.name)
-                #action=toolbar.actions()[1]
-                for action in toolbar.actions():
-                    if "Adjust" in action.name and "Window" in action.name:
-                        if not action.isChecked():
-                            action.toggle()
-                            break
-        slicer.util.selectModule("Colors")
-        self.pythonconsole = mainWindow.findChild("QDockWidget", "PythonConsoleDockWidget")
-        self.pythonconsole.setVisible(0)
-        self.modulepanel = mainWindow.findChild("QDockWidget", "PanelDockWidget")
-        self.modulepanel.setVisible(0)
-        compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-        for node in compNodes:
-            node.SetSliceIntersectionVisibility(1)
+        self.dropNav = VolumeDropdown(None, "Navigator")"""
+        
+        # not sure what to do with these
+        #self.externalLoad = ExternalLoadButton("Load")
+        #self.labelSelector = InteractiveLabelSelector(None, "Navigator")
+        #self.angleSlider = AngleSlider("Navigator", "Compare1", "Compare2")
+    def clear_views(self):
+        for view in self.list_of_VolumeDropdowns:
+            view.clear_view()
+        
+        

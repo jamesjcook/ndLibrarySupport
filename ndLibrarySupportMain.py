@@ -29,6 +29,8 @@ def lib_start(args,template_conf):
     parser.add_option("-g", "--group", action="store", type="string", dest='group',default='')
     parser.add_option("-l", "--library", "--lib_path", action="store", type="string", dest='lib_path',default='')
     parser.add_option("-t", "--template", action="store", type="string", dest='template',default='')
+    parser.add_option("--data_package", action="store", type="string", dest='data_package',default='')
+
     try:
         (opts, args) = parser.parse_args(args)
     except getopt.GetoptError:
@@ -54,8 +56,14 @@ def lib_start(args,template_conf):
         else:
             print("Error: no template"+template_conf)
             return None
-    ndman=manager(opts.lib_path,categoryFilter='TransformedDataPackage')
+    ndman=manager(opts.lib_path,categoryFilter='TransformedDataPackage', prompt=opts.data_package == '')
+    if opts.data_package != '':
+        data_package = ndman.set_data_package(opts.data_package)
+        if data_package is None:
+            print("Error finding {} in libraries".format(opts.data_package))
     return ndman
+
+
 
 
 ndman=None
