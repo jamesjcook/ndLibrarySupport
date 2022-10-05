@@ -60,7 +60,7 @@ class AtlasController(): ## Rename?
             if orient_key in self.library.conf:
                 ok=orient_key.replace("Orientation","")
                 custom_orient[ok]=self.library.conf[orient_key]
-        
+
         for view in self.view_names:
             orient_key = "{}Orientation".format(view)
             if orient_key in self.library.conf:
@@ -68,6 +68,7 @@ class AtlasController(): ## Rename?
                 custom_orient[ok]=self.library.conf[orient_key]
         sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
         for node in sliceNodes:
+            node.SetUseLabelOutline(1)
             for opt in custom_orient:
                 if opt in node.GetSingletonTag():
                     node.SetOrientation(custom_orient[opt])
@@ -79,6 +80,12 @@ class AtlasController(): ## Rename?
             node.SetBackgroundVolumeID("None")
             node.SetForegroundVolumeID("None")
             node.SetLabelVolumeID("None")"""
+
+        # not sure if this is the right place for this
+        # link all the views together
+        nodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+        for node in nodes:
+            node.SetLinkedControl(1)
 
 
 
@@ -94,8 +101,8 @@ class AtlasController(): ## Rename?
         """self.drop1.setupLibrary(self.library)
         self.drop2.setupLibrary(self.library)
         self.drop3.setupLibrary(self.library)
-        self.dropNav.setupLibrary(self.library)
-        self.labelSelector.setupLibrary(self.library)"""
+        self.dropNav.setupLibrary(self.library)"""
+        self.labelSelector.setupLibrary(self.library)
         
         if "AnnotationMode" not in self.library.conf:
             return
@@ -141,15 +148,6 @@ class AtlasController(): ## Rename?
     # now also instantiates a 2nd instance in manager.py to control the atlas view (for comparison)
     def __init__(self, view_names=None):
         self.setup_lib_counter = 0
-        ## Set up the layout and slice view nodes
-        """loadNavigatorAnd2DCompare()
-        loadNavigatorWithLoadAnd2DCompare()
-        loadNavigatorAndTallAxial()
-        setNavigatorWithLoadAnd2DCompare()
-        setNavigatorAnd2DCompare()
-        setNavigatorAndTallAxial()
-        setLabelOutlineAtlas(1)
-        setSliceNodeLinks(1)"""
         self.library = None
         self.view_names = view_names
         ## Set up GUI elements
@@ -166,14 +164,11 @@ class AtlasController(): ## Rename?
         for view in view_names:
             self.list_of_VolumeDropdowns.append(VolumeDropdown(None, view))
 
-        """self.drop1 = VolumeDropdown(None, "Compare1")
-        self.drop2 = VolumeDropdown(None, "Compare2")
-        self.drop3 = VolumeDropdown(None, "Axial")
-        self.dropNav = VolumeDropdown(None, "Navigator")"""
-        
         # not sure what to do with these
+        # ExternalLoadButton is only appropriate on some views!, should fix when it is instantiate.
         #self.externalLoad = ExternalLoadButton("Load")
-        #self.labelSelector = InteractiveLabelSelector(None, "Navigator")
+        # 
+        self.labelSelector = InteractiveLabelSelector(None, None)
         #self.angleSlider = AngleSlider("Navigator", "Compare1", "Compare2")
     def clear_views(self):
         for view in self.list_of_VolumeDropdowns:

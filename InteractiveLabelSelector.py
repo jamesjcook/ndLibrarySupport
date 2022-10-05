@@ -14,8 +14,8 @@ class InteractiveLabelSelector:
     ## Adds a "Visible" column to the table of colors found in the Colors module
     def __init__(self, library, node_tag):
         if not isinstance(node_tag, str):
-            print("Tag is not a string")
-            return
+            print("InteractiveLabelSelector no slice view, will not add buttons")
+            
         widget = slicer.modules.colors.widgetRepresentation()
         frame1 = widget.findChild("QFrame")
         self.comboBox = frame1.findChild("qMRMLColorTableComboBox", "ColorTableComboBox")
@@ -62,12 +62,15 @@ class InteractiveLabelSelector:
             print("Invalid library used")
             return
         self.library = library
-        if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
-            print("Cannot setup library for InteractiveLabelSelector, Tag {} does not exist".format(self.node_tag))
-            return
-        qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
-        qtLayout.addWidget(self.allPushButton)
-        qtLayout.addWidget(self.nonePushButton)
+        
+        if self.node_tag is not None:
+            if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
+                print("Cannot setup library for InteractiveLabelSelector, Tag {} does not exist".format(self.node_tag))
+                return
+            qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
+            qtLayout.addWidget(self.allPushButton)
+            qtLayout.addWidget(self.nonePushButton)
+        
         sliceNames = slicer.app.layoutManager().sliceViewNames()
         for sliceTag in sliceNames:
             sliceNodeInteractor = slicer.app.layoutManager().sliceWidget(sliceTag).sliceView().interactor()
