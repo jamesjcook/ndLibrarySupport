@@ -5,7 +5,7 @@
 ## Function to initialize the ndLibraryViewer
 def initializeNDLibraryViewer(rootDir):
     if not os.path.isdir(rootDir):
-        print("Please specify a valid path")
+        self.logger.warning("Please specify a valid path")
         return
     ## Create a tree of ndLibrary object where masterLib is the root
     masterLib = ndLibrary(None, rootDir)

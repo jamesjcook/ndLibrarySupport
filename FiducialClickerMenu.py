@@ -1,6 +1,7 @@
 import slicer
 import qt
 import re 
+import logging
 import copy
 
 ## BAD BEHAVIOR -- children should not place themselves
@@ -10,6 +11,7 @@ import copy
 class FiducialClickerMenu(qt.QMenu):
     def __init__(self): 
         super(qt.QMenu, self).__init__()
+        self.logger=logging.getLogger("ndLibrary")
         mainWindow = slicer.util.mainWindow()
         mainMenuBar = mainWindow.findChild("QMenuBar", "menubar")
         #mainMenuBar.addMenu(self)

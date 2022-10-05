@@ -9,12 +9,14 @@
 import shutil
 import re
 import os
+import logging
 
 class simplify:
     def __init__(self, lib, new_location, auto_output=False):
+        self.logger=logging.getLogger("ndLibrary")
         self.jobs = list()
         if not isinstance(lib,ndLibrary):
-            print("Setup master lib")
+            self.logger.warning("Setup master lib")
             self.lib = ndLibrary(None, lib)
         else:
             self.lib = lib
@@ -55,11 +57,11 @@ class simplify:
     
     def show_work_log(self):
         for job in self.jobs:
-            print(job[0])
+            self.logger.warning(job[0])
     
     def run(self,test_mode=False):
         for job in self.jobs:
-            print(job[0])
+            self.logger.warning(job[0])
             if "mkdir" in job[0]:
                 os.mkdir(job[1])
             elif "process" in job[0]:
@@ -67,8 +69,8 @@ class simplify:
             elif "save" in job[0]:
                 self.save_conf(job[1],job[2])
             else:
-                print("\tUNKNOWN job op")
-        print("simplify run completed.")
+                self.logger.warning("\tUNKNOWN job op")
+        self.logger.warning("simplify run completed.")
     
     def save_conf(self,lib,dest):
         # for copy to work we have to re-implement our dict sub-class
@@ -114,14 +116,14 @@ class simplify:
             ctblKey="ColorTable_"+vol
             if ctblKey in vol_set[vol].conf:
                 ctbl=os.path.join(vol_set[vol].Path,vol_set[vol].conf[ctblKey])
-                print("custom color table:"+vol_set[vol].conf[ctblKey]+" for "+vol)
+                self.logger.warning("custom color table:"+vol_set[vol].conf[ctblKey]+" for "+vol)
                 if ctblKey not in lib.conf:
                     lib.conf[ctblKey] = os.path.basename(ctbl)
                 ctbl_dest=os.path.join(new_location, lib.conf[ctblKey])
                 if not os.path.isfile(ctbl_dest):
                     ctbl_dest = shutil.copy(ctbl, ctbl_dest)
                 else:
-                    print("previously completed "+ctblKey)
+                    self.logger.warning("previously completed "+ctblKey)
             else:
                 ctbl = None
             #if ctbl is not None:
@@ -130,13 +132,13 @@ class simplify:
             vol_name = self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+"_"+vol
             vol_dest = os.path.join(new_location,vol_name+".nhdr")
             if os.path.isfile(vol_dest):
-                print("previously completed "+vol)
+                self.logger.warning("previously completed "+vol)
                 continue
-            print("load/find volume node "+vol)
+            self.logger.warning("load/find volume node "+vol)
             vol_node=lib.get_volume_node(vol)
-            print("\tharden tform")
+            self.logger.warning("\tharden tform")
             tform_logic.hardenTransform(vol_node)
-            print("\tsave "+vol_dest)
+            self.logger.warning("\tsave "+vol_dest)
             slicer.util.saveNode(vol_node,vol_dest, properties)
             # in tesitng just do 1
             if test_mode:
@@ -164,7 +166,7 @@ class simplify:
         vol = "labels"
         vol_dest = os.path.join(new_location,self.lib_name_disk(lib.conf["LibName"]).replace("_labels","")+"_"+vol+".nhdr")
         if os.path.isfile(vol_dest):
-            print("previously completed "+vol)
+            self.logger.warning("previously completed "+vol)
             return
         vol_node = lib.getLabelVolume()
         label_vol = lib.labelVolume
@@ -174,11 +176,11 @@ class simplify:
         if label_vol is not None :
             if isinstance(label_vol, ndLibrary):
                 lib = label_vol
-            print("load/find volume node "+vol)
+            self.logger.warning("load/find volume node "+vol)
             #vol_node=lib.loadLabels(vol)
-            print("\tharden tform")
+            self.logger.warning("\tharden tform")
             tform_logic.hardenTransform(vol_node)
-            print("\tsave "+vol_dest)
+            self.logger.warning("\tsave "+vol_dest)
             slicer.util.saveNode(vol_node,vol_dest, properties)
     
     def copy_tractography(self,lib,new_location):
@@ -186,7 +188,7 @@ class simplify:
         scene_out=tract_dir+".mrml"
         # check for tract out scene, and reutn if done.
         if os.path.isfile(scene_out):
-            print("Tractography complete, skipping")
+            self.logger.warning("Tractography complete, skipping")
             return
         # load check tractography, or return
         if not lib.load_tractography():
@@ -209,11 +211,11 @@ class simplify:
                 dest = os.path.join(tract_dir,trk+".vtk")
                 # due to how traactography scene works we cannot skip any ever
                 #if os.path.isfile(dest):
-                #    print("previously completed "+trk)
+                #    self.logger.warning("previously completed "+trk)
                 #    continue
-                print("\tharden tform")
+                self.logger.warning("\tharden tform")
                 tform_logic.hardenTransform(node)
-                print("\tsave "+dest)
+                self.logger.warning("\tsave "+dest)
                 slicer.util.saveNode(node,dest, properties)
             # set blankish view 
             #node_list=slicer.mrmlScene.GetNodes()
@@ -282,16 +284,16 @@ class simplify:
     def copy_origin_transform(lib):
         try:
             originTransform = lib.originTransform[0]
-            #print(originTransform)
-            #print(os.path.join(new_location, category_text+lib_name+"_"+originTransform.split("\\")[-1]))
+            #self.logger.warning(originTransform)
+            #self.logger.warning(os.path.join(new_location, category_text+lib_name+"_"+originTransform.split("\\")[-1]))
             shutil.copy(originTransform, os.path.join(new_location, originTransform.split("\\")[-1]))
         except:
-            print("No OriginTransform")
+            self.logger.warning("No OriginTransform")
     
     def copy_vol_set(lib,vol_set,new_location,category_text,lib_name):
         error("KABLOOIE BAD OLD CODE")
         for volKey in vol_set:
-            #print(os.path.join(new_location, category_text+lib_name+"_"+volKey+".nii.gz"))
+            #self.logger.warning(os.path.join(new_location, category_text+lib_name+"_"+volKey+".nii.gz"))
             shutil.copy(vol_set[volKey][0], os.path.join(new_location, category_text+lib_name+"_"+volKey+".nii.gz"))
     
     def remove_nodes_by_class(self,node_class):

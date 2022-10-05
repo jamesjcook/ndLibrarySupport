@@ -5,19 +5,21 @@
 ## File is already loaded when signal is emitted though...
 '''
 def test(properties):
-    print("Properties are")
-    print(properties)
+    self.logger.warning("Properties are")
+    self.logger.warning(properties)
     properties['show'] = False
-    print(properties)
+    self.logger.warning(properties)
 '''
 
 import qt
 import slicer
+import logging
 
 class ExternalLoadButton(qt.QPushButton):
     ## node_tag is the tag of the node the button is placed in
     def __init__(self, node_tag):
         super(qt.QPushButton, self).__init__()
+        self.logger=logging.getLogger("ndLibrary")
         self.text = "Load External Volume"
         self.released.connect(self.loadExternalVolume)
         self.node_tag = node_tag
@@ -41,7 +43,7 @@ class ExternalLoadButton(qt.QPushButton):
         if result == False:
             # result may be false even if we loaded. Will have to read docs on why.
             # For now alternative is to check if bg id changed.
-            #print("AddDataDialog returned False")
+            #self.logger.warning("AddDataDialog returned False")
             #return
             pass
             # This whole function works by abusing the default of "reset slice to new data" on load.

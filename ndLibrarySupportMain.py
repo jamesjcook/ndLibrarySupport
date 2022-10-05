@@ -15,6 +15,7 @@
 import sys
 import os
 from manager import manager
+import logging
 
 
 def lib_start(args,template_conf):
@@ -34,7 +35,7 @@ def lib_start(args,template_conf):
     try:
         (opts, args) = parser.parse_args(args)
     except getopt.GetoptError:
-        print('lib_start.py -g <group> -t <template file>')
+        logger.warning('lib_start.py -g <group> -t <template file>')
         #print 'see https://itk.org/SimpleITKDoxygen/html/namespaceitk_1_1simple.html#ae40bd64640f4014fba1a8a872ab4df98 for the bitdepth info'
         sys.exit(2)
     # if opts.help
@@ -48,19 +49,19 @@ def lib_start(args,template_conf):
         if os.path.isfile(opts.template):
             template_conf=opts.template
         else:
-            print("Not using template opt because <{}> not file".format(opts.template))
+            logger.warning("Not using template opt because <{}> not file".format(opts.template))
 
     if not os.path.isfile(os.path.join(opts.lib_path, r'lib.conf')):
         if os.path.isfile(os.path.join(template_conf)):
             copyfile(template_conf, os.path.join(opts.lib_path, r'lib.conf'))
         else:
-            print("Error: no template"+template_conf)
+            logger.warning("Error: no template"+template_conf)
             return None
     ndman=manager(opts.lib_path,categoryFilter='TransformedDataPackage', prompt=opts.data_package == '')
     if opts.data_package != '':
         data_package = ndman.set_data_package(opts.data_package)
         if data_package is None:
-            print("Error finding {} in libraries".format(opts.data_package))
+            logger.warning("Error finding {} in libraries".format(opts.data_package))
     return ndman
 
 
@@ -71,10 +72,12 @@ if __name__ == "__main__":
     code_directory = os.path.dirname(os.path.abspath(__file__))
     sys.path.append(os.path.dirname(code_directory))
     import ndLibrarySupport
-    print(code_directory)
+    import logging
+    logger=logging.getLogger("ndLibrary")
+    logger.warning(code_directory)
     #from conf import conf
     # might be able to ask ndLibrarySupport for its code folder
     # Maybe the packed conf could be a hard coded data element of ndlibrary support?
-    #print("Lib support code_dir <{}>".format(ndLibrarySupport.code_directory))
+    #logger.warning("Lib support code_dir <{}>".format(ndLibrarySupport.code_directory))
     template_conf = os.path.join(code_directory,"example","samba_packed_study","lib.conf")
     ndman=lib_start(sys.argv[1:],template_conf)

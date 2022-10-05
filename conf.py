@@ -6,9 +6,11 @@ from __future__ import print_function
 import sys
 import os
 import re
+import logging
 
 class conf(dict):
     def __init__(self,conf_path,conf_name="lib.conf", existing_conf = None):
+        self.logger=logging.getLogger("ndLibrary")
         if existing_conf is not None:
             for f in existing_conf:
                     self[f]=existing_conf[f]
@@ -32,12 +34,12 @@ class conf(dict):
         if os.path.isfile(self.conf_path):
             self.load(self.conf_path)#, existing_conf)
         else:
-            print("New empty conf for "+self.conf_path)
+            self.logger.warning("New empty conf for "+self.conf_path)
             
     ## generate a new config file from a template if does not exist
     ## template is the path to template config file 
     def generate(self, template):
-        print('    GENERATING NEW CONF FILE FOR: ' + template)
+        self.logger.warning('    GENERATING NEW CONF FILE FOR: ' + template)
         self.load(template)
         self.save()
         
@@ -48,27 +50,28 @@ class conf(dict):
         with open(file) as fp:
             # do stuff with fp
             for cnt, line in enumerate(fp):
-                #print(cnt)
+                #self.logger.warning(cnt)
                 self.lineCount = cnt+1
                 components = re.match(r"^([^#=]*)(?:=([^#]+))?(#.*)?$",line)
                 key = components.group(1)
                 value = components.group(2)
                 comment = components.group(3)
+
                 if key is not None and key.strip():# and value is not None:
                     if value is None:
                         value=""
                     self[key.strip()] = value.strip()
                     self.lines[cnt] = key.strip()
                 elif (key is None or not key) and (value is None or not value):
-                    #print("Ignore line:"+line.strip())
+                    self.logger.warning("Ignore line:"+line.strip())
                     pass
                 elif key is None:
-                    print("conf error: bad key, value is "+value.strip())
+                    self.logger.warning("conf error: bad key, value is "+value.strip())
                 elif value is None:
                     # This condition has been disabled, by allowing blank values in primary match.
                     # We'll allow blank values as a way to disable a parent key.
                     # THIS IS KINDA AGAINST DESIGN! PARENTS SHOULD ONLY HOLD VALUES WHICH ARE COMMON TO ALL CHILDREN
-                    print("conf error: bad value, key is "+key.strip())
+                    self.logger.warning("conf error: bad value, key is "+key.strip())
                 if comment is not None:
                     self.comments[cnt] = comment
         #if  existing_conf is not None:
@@ -84,20 +87,20 @@ class conf(dict):
     ## print conf
     def print(self,indent=""):
         for e in self:
-            print(indent+"\t"+e+"\t= "+self[e])
+            self.logger.warning(indent+"\t"+e+"\t= "+self[e])
     ## save conf
     def save(self,out_path=None):
         if out_path is None:
             out_path = self.conf_dir
         if out_path and os.path.isdir(out_path):
-            #print("Given dir, add name")
+            #self.logger.warning("Given dir, add name")
             out_path=os.path.join(out_path,"lib.conf")
         else:
-            print("Write disabled, switch to print" + "missing out path " + out_path)
+            self.logger.warning("Write disabled, switch to print" + "missing out path " + out_path)
             out_path = None
         #if out_path is None or os.path.isfile(out_path):
         if out_path and os.path.isfile(out_path):
-            print('Conf overwrite disabled for now');
+            self.logger.warning('Conf overwrite disabled for now');
             #out_path=self.conf_path
             return
         if out_path is not None:
@@ -113,22 +116,22 @@ class conf(dict):
                 data=self.lines[i]+"="+fields[self.lines[i]]
                 del fields[self.lines[i]]
             line=data+comment
-            #print(str(i)+":"+line)
-            #print(line)
+            #self.logger.warning(str(i)+":"+line)
+            #self.logger.warning(line)
             if not line == "":
                 if out_path is not None:
                     fp.write(line+"\n")
                 else:
-                    print(line)
+                    self.logger.warning(line)
         for e in fields:
             line=""
             if not e == "":
                 line = e+"="
             if not fields[e] == "":
                 line=line+fields[e]
-            #print(line)
+            #self.logger.warning(line)
             if out_path is not None:
                 fp.write(line+"\n")
             else:
-                print(line)
+                self.logger.warning(line)
 

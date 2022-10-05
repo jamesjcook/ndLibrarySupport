@@ -7,6 +7,7 @@
 
 import slicer
 import os
+import logging 
 
 from VolumeDropdown import VolumeDropdown
 from ExternalLoadButton import ExternalLoadButton
@@ -110,7 +111,7 @@ class AtlasController(): ## Rename?
         ## load up the desired F.mrk.json file to show and save fiducials
         # TODO: grab chickever library relates to the specimen, not atlas
         from shutil import copyfile
-        print(self.library)
+        self.logger.warning(self.library)
         #F_template = r"L:\ProjectSpace\bxd_RCCF_review\archive_dump\fiducial_template.mrk.json"
         F_template = r"C:\Users\hmm56\Documents\F.fcsv"
         tmp = self.library.conf["LibName"] + r".fcsv" 
@@ -147,6 +148,7 @@ class AtlasController(): ## Rename?
     ## Currently only instantiated in DataPackageMenu
     # now also instantiates a 2nd instance in manager.py to control the atlas view (for comparison)
     def __init__(self, view_names=None):
+        self.logger=logging.getLogger("ndLibrary")
         self.setup_lib_counter = 0
         self.library = None
         self.view_names = view_names

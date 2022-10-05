@@ -3,16 +3,18 @@
 ## Author: Austin Kao
 import qt
 import slicer
-from ndLibrary import ndLibrary
 import re
+import logging
+from ndLibrary import ndLibrary
 
 class VolumeDropdown(qt.QComboBox):
     ## library is the ndLibrary used to store the locations of the volumes in the dropdown
     ## Make sure library contains the relative path to the volumes
     ## node_tag is the string tag that identifies the slice view tag the dropdown is in
     def __init__(self, library, node_tag):
+        self.logger=logging.getLogger("ndLibrary")
         if not isinstance(node_tag, str):
-            print("Tag is not a string")
+            self.logger.warning("Tag is not a string")
             return
         super(qt.QComboBox, self).__init__()
         self.node_tag = node_tag
@@ -37,8 +39,8 @@ class VolumeDropdown(qt.QComboBox):
     ## Function will load the requested volume and add it to volDict
     def changeVolume(self, index):
         name = self.itemText(index)
-        #print(name)
-        #print(self.libDict[name])
+        #self.logger.warning(name)
+        #self.logger.warning(self.libDict[name])
         if name not in self.libDict:
             return
         compString = "vtkMRMLSliceCompositeNode{}".format(str(self.node_tag))
@@ -53,11 +55,11 @@ class VolumeDropdown(qt.QComboBox):
         #if type(self.volDict) is tuple:
         #    volNode = self.volDict[key][1]
         #else:
-        #    print("Bizarro code path")
+        #    self.logger.warning("Bizarro code path")
         #    volNode = self.volDict[key][1]
         
         if type(self.libDict[name]) is tuple:
-            print("error on {} select, coder is off their rocker and passed tuple instead of ndLibrary".format(name))
+            self.logger.warning("error on {} select, coder is off their rocker and passed tuple instead of ndLibrary".format(name))
             return
         volNode = self.libDict[name].get_volume_node(name)
         if volNode is not None:
@@ -95,11 +97,11 @@ class VolumeDropdown(qt.QComboBox):
     ## Function that will set up the volumes from a particular ndLibrary for the dropdown menu
     def setupLibrary(self, library):
         if not isinstance(library, ndLibrary):
-            print("Not a library")
+            self.logger.warning("Not a library")
             return
         self.clear()
         if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
-            print("Cannot setup library for VolumeDropdown, Tag {} does not exist".format(self.node_tag))
+            self.logger.warning("Cannot setup library for VolumeDropdown, Tag {} does not exist".format(self.node_tag))
             return
         qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
         qtLayout.addWidget(self)
@@ -108,16 +110,16 @@ class VolumeDropdown(qt.QComboBox):
         volset = library.getEntireVolumeSet().copy()
         if library.vol_ordering in library.conf:
             sorting = library.conf[library.vol_ordering].split(',')
-            #print("use sorting")
+            #self.logger.warning("use sorting")
         else:
             sorting = None
         if sorting is not None:
             for key in sorting:
                 if key in volset:
-                    #print("insert "+key)
+                    #self.logger.warning("insert "+key)
                     self.addItem(key)
                     if isinstance(volset[key], ndLibrary):
-                        #print("key using sublib")
+                        #self.logger.warning("key using sublib")
                         self.libDict[key] = volset[key]
                     else:
                         self.libDict[key] = library

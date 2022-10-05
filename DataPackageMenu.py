@@ -2,6 +2,7 @@
 ## Author: Austin Kao
 import qt
 import slicer
+import logging
 
 from AtlasController import AtlasController
 from ndLibrary import ndLibrary
@@ -13,8 +14,9 @@ class DataPackageMenu(qt.QMenu):
     firstInteraction = True
     flashTimer = qt.QTimer()
     def __init__(self, list_of_libraries, menu_bar, pack_name=None, view_names=None):
+        self.logger=logging.getLogger("ndLibrary")
         if not isinstance(list_of_libraries, list):
-            print("Not a list")
+            self.logger.warning("Not a list")
             return
         super(qt.QMenu, self).__init__()
         menu_bar.addMenu(self)
@@ -59,7 +61,7 @@ class DataPackageMenu(qt.QMenu):
             elif "LibName" in lib.conf:
                 name = lib.conf["LibName"]
             menuItem = qt.QAction(name, self)
-            print("menu item name is {}".format(menuItem))
+            self.logger.warning("menu item name is {}".format(menuItem))
             self.addAction(menuItem)
             ## Define a function for the menu item to execute when selected
             ## MUST must be a lambda for this to work
@@ -84,7 +86,7 @@ class DataPackageMenu(qt.QMenu):
             self.show()
     def flashStop(self):
         if self.firstInteraction == True:
-            print("flash stop")
+            self.logger.warning("flash stop")
             self.firstInteraction = False
             self.flashTimer.stop()
         #self.flashTimer.timeout.disconnect(self.flashToggle)

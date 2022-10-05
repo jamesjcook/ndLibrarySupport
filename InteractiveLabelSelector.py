@@ -3,6 +3,7 @@
 ## Author: Austin Kao
 import slicer
 import qt
+import logging
 from ndLibrary import ndLibrary
 
 class InteractiveLabelSelector:
@@ -13,9 +14,9 @@ class InteractiveLabelSelector:
     ## nonePushButton is a button that will make all relevant labels invisible
     ## Adds a "Visible" column to the table of colors found in the Colors module
     def __init__(self, library, node_tag):
+        self.logger=logging.getLogger("ndLibrary")
         if not isinstance(node_tag, str):
-            print("InteractiveLabelSelector no slice view, will not add buttons")
-            
+            self.logger.warning("InteractiveLabelSelector no slice view, will not add buttons")
         widget = slicer.modules.colors.widgetRepresentation()
         frame1 = widget.findChild("QFrame")
         self.comboBox = frame1.findChild("qMRMLColorTableComboBox", "ColorTableComboBox")
@@ -59,13 +60,13 @@ class InteractiveLabelSelector:
     ## Function to set the current active ndLibrary of an InteractiveLabelSelector
     def setupLibrary(self, library):
         if not isinstance(library, ndLibrary):
-            print("Invalid library used")
+            self.logger.warning("Invalid library used")
             return
         self.library = library
         
         if self.node_tag is not None:
             if slicer.app.layoutManager().sliceWidget(self.node_tag) is None:
-                print("Cannot setup library for InteractiveLabelSelector, Tag {} does not exist".format(self.node_tag))
+                self.logger.warning("Cannot setup library for InteractiveLabelSelector, Tag {} does not exist".format(self.node_tag))
                 return
             qtLayout = slicer.app.layoutManager().sliceWidget(self.node_tag).layout()
             qtLayout.addWidget(self.allPushButton)
@@ -76,7 +77,7 @@ class InteractiveLabelSelector:
             sliceNodeInteractor = slicer.app.layoutManager().sliceWidget(sliceTag).sliceView().interactor()
             sliceNodeInteractor.AddObserver('LeftButtonReleaseEvent', self.processSliceViewClick)
         if library.getColorTableNode() is None:
-            print("Lookup table not available")
+            self.logger.warning("Lookup table not available")
             return
         self.status_label.setText(library.conf["LibName"])
         self.comboBox.currentNodeID = u'' + library.getColorTableNode().GetID()
@@ -104,16 +105,16 @@ class InteractiveLabelSelector:
     ## Skips opacity of region 0: assumed to be Exterior
     def setAllLabelOpacity(self, opacity_value):
         if self.library is None:
-            print("Library not ready")
+            self.logger.warning("Library not ready")
             return
         idDict = dict()
         compNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
         # do in background, by taking label volume out of view
-        # print("hide labels start")
+        # self.logger.warning("hide labels start")
         for node in compNodes:
             idDict[node] = node.GetLabelVolumeID()
             node.SetReferenceLabelVolumeID("None")
-        # print("hide labels end")
+        # self.logger.warning("hide labels end")
         colorTable = self.library.getColorTableNode()
         self.comboBox.currentNodeID = u'' + colorTable.GetID()
         #colorTable.GetColorName(clr_num)
@@ -137,21 +138,21 @@ class InteractiveLabelSelector:
                     opacity_index = self.tableView.model().index(row_num, 2)
                     current_opacity = float(self.tableView.model().data(opacity_index))
                 except:
-                    print("  skip, no opacity")
+                    self.logger.warning("  skip, no opacity")
                     continue
             if round(current_opacity) == opacity_value:
-                # print(status_print+" skip")
+                # self.logger.warning(status_print+" skip")
                 continue
             #cname_index = self.tableView.model().index(row_num, 1)
             #cname = self.tableView.model().data(cname_index)
             visible_index = self.tableView.model().index(row_num, 3)
             colorTable.SetOpacity(clr_num, opacity_value)
             self.tableView.model().setData(visible_index, self.opacity_text[round(current_opacity)])
-            # print(status_print+" set")
-        # print("show labels")
+            # self.logger.warning(status_print+" set")
+        # self.logger.warning("show labels")
         for node in compNodes:
             node.SetReferenceLabelVolumeID(idDict[node])
-        # print("show labels end")
+        # self.logger.warning("show labels end")
     
     ## Function that toggles the color of a label for a selected row in the table of colors
     def processTableViewClick(self, index):
@@ -169,12 +170,12 @@ class InteractiveLabelSelector:
         values = regionValue.split(" ")
         roi_num = values[len(values)-1].replace("(","")
         roi_num = roi_num.replace(")</b>","")
-        # print("Toggle: "+roi_num)
+        # self.logger.warning("Toggle: "+roi_num)
         roi_num = int(roi_num)
         self.toggleColor(roi_num)
-        # print("   IN processSliceViewClick")
-        # print(self.library.fiducial_list)
-        # print(self.library.conf["LibName"])
+        # self.logger.warning("   IN processSliceViewClick")
+        # self.logger.warning(self.library.fiducial_list)
+        # self.logger.warning(self.library.conf["LibName"])
         
         if "AnnotationMode" not in self.library.conf:
             return
@@ -191,16 +192,16 @@ class InteractiveLabelSelector:
             return
         colorTable = self.library.getColorTableNode()
         if colorTable is None:
-            print("no color table available")
+            self.logger.warning("no color table available")
             return
         cname = colorTable.GetColorName(roi_num)
         if cname == colorTable.GetNoName() or 'Exterior' in cname or 'Background' in cname:
-            print("skip toggle on "+cname)
+            self.logger.warning("skip toggle on "+cname)
             return
         #self.comboBox.currentNodeID = u'' + colorTable.GetID()
         row_num = self.tableView.rowFromColorIndex(roi_num)
         if row_num is None:
-            print("problem in finding tableview row_num from roi_num(color number)")
+            self.logger.warning("problem in finding tableview row_num from roi_num(color number)")
         #opacity_index = self.tableView.model().index(row_num, 2)
         visible_index = self.tableView.model().index(row_num, 3)
         current_color=[-1,-1,-1,-1]
@@ -209,7 +210,7 @@ class InteractiveLabelSelector:
         if status_get_color:
             opacity_value=current_color[3]
         else:
-            print("Opacity data not present")
+            self.logger.warning("Opacity data not present")
             return
         # get current
         #opacity_value = float(self.tableView.model().data(opacity_index))

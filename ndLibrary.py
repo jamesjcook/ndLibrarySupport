@@ -37,7 +37,7 @@ class ndLibrary:
         #self.logger.setLevel(logging.WARNING)
         # TODO: support libs as files as well as dir
         if not os.path.isdir(file_loc):
-            print('Not a directory')
+            self.logger.warning('Not a directory')
             return
         self.conf_dir=file_loc
         self.conf_file_name = "lib.conf"
@@ -65,7 +65,7 @@ class ndLibrary:
             self.conf = conf("blank")
             pass
         else:
-            print("Parent is invalid")
+            self.logger.warning("Parent is invalid")
             return
         #self.valid = True
         self.parent = parent
@@ -110,7 +110,7 @@ class ndLibrary:
         try:
             conf = open(file)
         except:
-            print("Could not open conf file"+file)
+            self.logger.warning("Could not open conf file"+file)
             return
         self.conf_path=file
         line = conf.readline()
@@ -118,7 +118,7 @@ class ndLibrary:
             is_comment = False
             components = line.split("=")
             if line[0] == "#":
-                #print("Comment encountered")
+                #self.logger.warning("Comment encountered")
                 is_comment = True
             if len(components) == 2 and is_comment == False:
                 name = components[0]
@@ -140,12 +140,12 @@ class ndLibrary:
                 if key is not None and value is not None:
                     self.conf[key.strip()] = value.strip()
                 elif (key is None or not key) and (value is None or not value):
-                    #print("Ignore line:"+line.strip())
+                    #self.logger.warning("Ignore line:"+line.strip())
                     pass
                 elif key is None:
-                    print("conf error: bad key, value is "+value.strip())
+                    self.logger.warning("conf error: bad key, value is "+value.strip())
                 elif value is None:
-                    print("conf error: bad value, key is "+key.strip())
+                    self.logger.warning("conf error: bad value, key is "+key.strip())
         # clean up routine typeo, except its so pervasive... 
         #if self.pattern_field not in self.conf and "FileAbrevPattern" in self.conf:
         #    self.pattern_field = "FileAbrevPattern"
@@ -158,12 +158,12 @@ class ndLibrary:
     def buildChildren(self):
         # this is incomplete! recusive load is not cutting the end of the branch, it is do we continue loading our child.
         if self.recursion_field in self.conf and self.conf[self.recursion_field] == "false":
-            #print("Reached leaf of tree. No children")
+            #self.logger.warning("Reached leaf of tree. No children")
             self.is_leaf = True
             return
         #if (self.recursion_field in self.conf and self.conf[self.recursion_field] == "true"
         #    and self.path_field in self.conf and os.path.isdir(self.conf[self.path_field])):        
-        #        #print("Going on another path: {}".format(self.conf[self.path_field]))
+        #        #self.logger.warning("Going on another path: {}".format(self.conf[self.path_field]))
         #        os.chdir(self.conf[self.path_field])
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
@@ -179,7 +179,7 @@ class ndLibrary:
                 child_lib.loadEntire()
                 if child_lib.isValid():
                     self.children.append(child_lib)
-                    #print(os.path.join(self.conf_dir, entry))
+                    #self.logger.warning(os.path.join(self.conf_dir, entry))
         if len(self.children) == 0:
             self.is_leaf = True
     
@@ -195,7 +195,7 @@ class ndLibrary:
         if self.file_loc is not None and os.path.isfile(conf_path):
             self.valid = True
             #self.conf_path = conf_path
-            #print(self.conf_dir)
+            #self.logger.warning(self.conf_dir)
             #before we subclassed dict
             #self.conf=ndLibrarySupport.conf(conf_path)
             #self.conf=self.conf.fields.copy()
@@ -239,7 +239,7 @@ class ndLibrary:
             #    if not self.children[c].isValid():
             #        del self.children[c]
         else:
-            print("Not loading for {}".format(self.file_loc))
+            self.logger.warning("Not loading for {}".format(self.file_loc))
     
     ## Determines whether or not current ndLibrary is relevant enough for a menu of data packages
     ## Meant to be called after loading lib.conf file when building the entire tree
@@ -251,7 +251,7 @@ class ndLibrary:
         elif "Category" in self.conf and self.conf["Category"] == "Species":
             #and "Strain" in self.conf):
             self.relevantStrainLib = True
-        #print("{} is {}".format(self.file_loc, self.relevantStrainLib))
+        #self.logger.warning("{} is {}".format(self.file_loc, self.relevantStrainLib))
     
     ## Function to change the working directory according to the path specfied in a lib.conf file
     ## By default, the function will change the working directory to the ndLibrary's directory
@@ -269,9 +269,9 @@ class ndLibrary:
                 relativePath = nix_path
             if os.path.isdir(relativePath):
                 os.chdir(relativePath)
-                #print("Jumping to {}".format(os.getcwd()))
+                #self.logger.warning("Jumping to {}".format(os.getcwd()))
             else:
-                print("Path jump error from "+self.conf_dir+" to "+relativePath)
+                self.logger.warning("Path jump error from "+self.conf_dir+" to "+relativePath)
                 self.valid = False
         #if self.conf_dir == os.path.getcwd():
         #    return True
@@ -290,23 +290,23 @@ class ndLibrary:
     ## print conf
     def print_conf(self):
         for e in self.conf:
-            print("\t"+e+"\t= "+self.conf[e])
+            self.logger.warning("\t"+e+"\t= "+self.conf[e])
     ## print the tree below our location
     def printTree(self,indent=None):
         if indent is None:
             indent = ""
         for child in self.children:
             if not child.isValid():
-                print("invalid child"+child.conf_dir)
+                self.logger.warning("invalid child"+child.conf_dir)
             try:
                 volCount = len(child.volDict)
             except:
                 volCount = 0
-            print(indent+os.path.basename(child.file_loc)+":"+str(volCount))
+            self.logger.warning(indent+os.path.basename(child.file_loc)+":"+str(volCount))
             try:
-                print(indent+"  "+child.Path)
+                self.logger.warning(indent+"  "+child.Path)
             except:
-                print(indent+"  UNBUILT "+child.conf_dir)
+                self.logger.warning(indent+"  UNBUILT "+child.conf_dir)
             child.printTree(indent+"\t")
     ## print entire connected tree by finding oldest parent
     def printFullTree(self,indent=None):
@@ -323,11 +323,11 @@ class ndLibrary:
     ## TODO: adjust name from loadVolumes to more accurate, maybe discover?
     def loadVolumes(self):
         if self.volDict is not None:
-            #print("Volumes are already loaded")
+            #self.logger.warning("Volumes are already loaded")
             return
-        #print("Loading volumes for {}".format(self.file_loc))
+        #self.logger.warning("Loading volumes for {}".format(self.file_loc))
         self.jumpToDir()
-        #print("\t"+os.getcwd())
+        #self.logger.warning("\t"+os.getcwd())
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
         else:
@@ -353,7 +353,7 @@ class ndLibrary:
         self.volDict = dict()
         volExtPriority = dict()
         self.logger.debug("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
-        #print("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
+        #self.logger.warning("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
         for i in range(0, len(libEntries)):
             libPath = os.path.join(os.getcwd(), libEntries[i])
             ext = re.match(r''+self.extReg, libEntries[i])
@@ -376,7 +376,7 @@ class ndLibrary:
                 self.logger.error("regex error "+match_text+" or "+pattern+" in conf:"+( o.conf_path for o in self.ancestorList(True)) )
             if match_text is None:
                 self.logger.warning("lib name to abrev fail:"+libName)
-                #print("lib name to abrev fail:"+libName)
+                #self.logger.warning("lib name to abrev fail:"+libName)
                 continue
             #else:
             #    match_text=match.group(1)
@@ -388,11 +388,11 @@ class ndLibrary:
                 self.addToVolDict(libPath, match_text)
                 volExtPriority[match_text]=cExtPriority
             else:
-                #print("pri ex:"+libName)
+                #self.logger.warning("pri ex:"+libName)
                 self.logger.debug("\tpriority exclusion, e:"+str(lExtPriority)+" < c:"+str(cExtPriority)+" "+libName+"("+match_text+")")
         if len(self.volDict) == 0:
             self.volDict = None
-            #print("No valid files found")
+            #self.logger.warning("No valid files found")
             return
     ## Helper function that handles how a determined path and key are added to the volDict
     def addToVolDict(self, volPath, key):
@@ -418,7 +418,7 @@ class ndLibrary:
     ## Loads the lookup table for the different regions of the brain
     def loadLabels(self):
         if self.labelDict is not None and self.colorTable is not None and self.labelVolume is not None:
-            print("Labels are already loaded")
+            self.logger.warning("Labels are already loaded")
             return
         labelPat = r".*[._-]labels[._-].*"
         lookupPat = ".*_lookup[.](?:txt|ctbl)$"
@@ -426,9 +426,9 @@ class ndLibrary:
             filter = self.conf[self.filter_field]
         else:
             filter=r".*"
-            #print("No files to be found")
+            #self.logger.warning("No files to be found")
             #return
-        #print("Loading labels for {}".format(self.file_loc))
+        #self.logger.warning("Loading labels for {}".format(self.file_loc))
         self.jumpToDir()
         try:
             #########
@@ -437,12 +437,12 @@ class ndLibrary:
             labels = [f for f in os.listdir(os.getcwd()) if re.match(r''+labelPat, f) and re.match(r''+filter, f) and os.path.isfile(f) ]
             clts = [f for f in os.listdir(os.getcwd()) if re.match(r''+lookupPat, f) and re.match(r''+filter, f) and os.path.isfile(f)]
         except re.error:
-            print("loadLabels failed on regex match "+labelPat+" and "+filter)
+            self.logger.warning("loadLabels failed on regex match "+labelPat+" and "+filter)
             return
         #if re.match(".*labels.*", os.getcwd()) and ( len(labels) == 0 or len(clts) == 0 ):
         if "labels" in os.getcwd() and ( len(labels) == 0 or len(clts) == 0 ):
-            #print("loadLabels unsucecssful, labels found:"+str(len(labels))+" color tables:"+str(len(clts)))
-            #print("\t"+os.getcwd()+"  pattern: "+filter+" lbl filter: "+labelPat+" ctbl filter: "+lookupPat)
+            #self.logger.warning("loadLabels unsucecssful, labels found:"+str(len(labels))+" color tables:"+str(len(clts)))
+            #self.logger.warning("\t"+os.getcwd()+"  pattern: "+filter+" lbl filter: "+labelPat+" ctbl filter: "+lookupPat)
             return
         extPriority = 100
         for i in range(0, len(labels)):
@@ -451,22 +451,22 @@ class ndLibrary:
             if ext is not None:
               ext=ext.groups()[0]
             if ext is None:
-                print("Not expected ext:"+f+" using:"+self.extReg)
+                self.logger.warning("Not expected ext:"+f+" using:"+self.extReg)
                 continue
             lExtPriority = self.extensionPriority.index(ext)
             if lExtPriority<extPriority:
                 labelPath = os.path.join(os.getcwd(), labels[i])
-                #print(labelPath)
+                #self.logger.warning(labelPath)
                 self.labelVolume = (labelPath, None)
         if not isinstance(self.labelVolume, tuple):
-            #print("Not a tuple. No valid volumes found.")
+            #self.logger.warning("Not a tuple. No valid volumes found.")
             return
         ## Assume that the first text file found is the right color lookup table file
         clt_idx=0
         if(len(clts) > 0):
             ctbl_file_path=os.path.join(os.getcwd(), clts[clt_idx])
         else:
-            print("WARNING: no lookup table at: " + os.getcwd())
+            self.logger.warning("WARNING: no lookup table at: " + os.getcwd())
             return
         
         self.labelDict = dict()
@@ -479,7 +479,7 @@ class ndLibrary:
             if not loadSuccess:
                 colorTable = None
         if colorTable is None:
-            print("Could not load color lookup table. File: {}".format(clts[clt_idx]))
+            self.logger.warning("Could not load color lookup table. File: {}".format(clts[clt_idx]))
             return
         self.colorTable = (ctbl_file_path, colorTable)
         ## This loads up and parses the color table manually... that should be completely unnecessary
@@ -518,12 +518,12 @@ class ndLibrary:
                         # self.labelDict[cname] = [roi_num, row_num, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
                         self.labelDict[cname] = [roi_num, color_at_idx[0],color_at_idx[1],color_at_idx[2]]
                     else:
-                        print("error color fetching idx "+roi_num+" name:"+cname)
+                        self.logger.warning("error color fetching idx "+roi_num+" name:"+cname)
                 except ValueError:
                     pass
         parent_lib = self.parent
         ## assign label info to this library and all libraries above this level.
-        #print("Found valid labels in {}".format(self.file_loc))
+        #self.logger.warning("Found valid labels in {}".format(self.file_loc))
         while parent_lib is not None:
             parent_lib.labelDict = self
             parent_lib.colorTable = self
@@ -537,10 +537,10 @@ class ndLibrary:
     ## Element 1 is the transform node in 3D Slicer
     def loadOriginTransform(self):
         if not "OriginTransform" in self.conf:
-            print("origin transform not specified {}".format(self.conf["LibName"]))
+            self.logger.warning("origin transform not specified {}".format(self.conf["LibName"]))
             return
         if self.originTransform is not None:
-            print("origin transform already discovered {}".format(self.conf["LibName"]))
+            self.logger.warning("origin transform already discovered {}".format(self.conf["LibName"]))
             return
         self.jumpToDir()
         # CANT BE BOTHERD TO SORT THIS OUT SMART(right now)
@@ -580,15 +580,15 @@ class ndLibrary:
                 # do we care about maintainigng regex transform in simplify?
                 # this would also bust saving config because it would stop being a relative path
                 self.conf["OriginTransform"] = originPath
-                print("origin transform resolved {} {}".format(self.conf["LibName"], originPath))
+                self.logger.warning("origin transform resolved {} {}".format(self.conf["LibName"], originPath))
                 #ot=self.getOriginTransform()
             else:
                 self.jumpToDir()
-                print("error resolving "+self.conf["OriginTransform"]+" in "+os.getcwd()+" for lib "+self.conf_dir)
+                self.logger.warning("error resolving "+self.conf["OriginTransform"]+" in "+os.getcwd()+" for lib "+self.conf_dir)
             #if self.parent is not None and self.parent.originTransform is not None and self.parent.originTransform[1] is not None:
             #    ot.SetAndObserveTransformNodeID(self.parent.originTransform[1].GetID())
         else:
-            print("Error on transform resolution:"+originPath+" in "+transform_dir)
+            self.logger.warning("Error on transform resolution:"+originPath+" in "+transform_dir)
     ## Returns the origin transform for a given volume
     ## Loads the transform into Slicer if it has not been loaded yet
     def getOriginTransform(self, recurse=False):
@@ -613,17 +613,17 @@ class ndLibrary:
                     self.originTransform = (self.originTransform[0], transformNode)
                     oldest_ancestor_lib.transforms[self.originTransform[0]] = transformNode
                 else:
-                    print("Failed to load transform:"+self.originTransform[0]+" from "+self.conf_dir)
+                    self.logger.warning("Failed to load transform:"+self.originTransform[0]+" from "+self.conf_dir)
             if self.originTransform[1] is None: 
                 return None
             # stack transforms in reverse order
             transform=self.originTransform[1]
             for a in ancestors:
                 if a.originTransform is not None and recurse:
-                    print(a.conf["LibName"])
+                    self.logger.warning(a.conf["LibName"])
                     ancestor_transform = a.getOriginTransform()
                     if ancestor_transform is not None and ancestor_transform is not transform:
-                        print("\tattaching transform to "+ancestor_transform.GetName())
+                        self.logger.warning("\tattaching transform to "+ancestor_transform.GetName())
                         transform.SetAndObserveTransformNodeID(ancestor_transform.GetID())
                         transform=ancestor_transform
             return self.originTransform[1]
@@ -645,9 +645,9 @@ class ndLibrary:
                 if volNode is not None:
                     return volNode
             try:
-                print("Invalid key "+key+" in "+self.Path)
+                self.logger.warning("Invalid key "+key+" in "+self.Path)
             except:
-                print("Invalid key "+key+" in unbuilt lib from conf "+self.conf_dir)
+                self.logger.warning("Invalid key "+key+" in unbuilt lib from conf "+self.conf_dir)
             return None
         volNode = self.volDict[key][1]
         if volNode is None:
@@ -655,7 +655,7 @@ class ndLibrary:
             ctblKey="ColorTable_"+key
             if ctblKey in self.conf:
                 ctbl=os.path.join(os.path.dirname(self.volDict[key][0]),self.conf[ctblKey])
-                print("custom color table:"+self.conf[ctblKey]+" for "+key)
+                self.logger.warning("custom color table:"+self.conf[ctblKey]+" for "+key)
             else:
                 ctbl = None
             if (sys.version_info > (3, 0)):
@@ -679,7 +679,7 @@ class ndLibrary:
                     volNode.GetDisplayNode().SetAndObserveColorNodeID(ctbl.GetID())
             else:
                 #slicer.util.showStatusMessage(key+ " Error loading")
-                print("Error loading volume:"+key)
+                self.logger.warning("Error loading volume:"+key)
             #slicer.util.showStatusMessage("")
         return volNode
     
@@ -688,7 +688,7 @@ class ndLibrary:
         if isinstance(self.labelDict, type(self)):
             return self.labelDict.getRegionLabel(roi_num)
         if not roi_num in self.labelDict:
-            print("Invalid region number")
+            self.logger.warning("Invalid region number")
             return
         return self.labelDict[roi_num][0]
     
@@ -717,23 +717,23 @@ class ndLibrary:
         return self.labelDict
     
     def load_tractography(self):
-        print("Tract load")
+        self.logger.warning("Tract load")
         tract_path = os.path.join(self.Path,"tractography.mrml")
         if not os.path.isfile(tract_path):
-            print("No tractography.mrml available at "+tract_path)
+            self.logger.warning("No tractography.mrml available at "+tract_path)
             return False
         labels = self.getLabelVolume()
         self.jumpToDir()
         slicer.util.loadScene(tract_path)
         # look for custom python
         if "CustomPython" in self.conf:
-            print("\t with CustomPython")
+            self.logger.warning("\t with CustomPython")
             # run
             library=self
             try:
                 exec(open(self.conf["CustomPython"]).read())
             except:
-                print("CustomPython\""+self.conf["CustomPython"]+"\"Failed in dir"+os.getcwd())
+                self.logger.warning("CustomPython\""+self.conf["CustomPython"]+"\"Failed in dir"+os.getcwd())
                 return False
         return True
     
@@ -741,7 +741,7 @@ class ndLibrary:
     ## Loads the label volume into Slicer if not loaded yet
     def getLabelVolume(self):
         if isinstance(self.labelVolume, type(self)):
-            #print("Going to {}".format(self.labelVolume.file_loc))
+            #self.logger.warning("Going to {}".format(self.labelVolume.file_loc))
             return self.labelVolume.getLabelVolume()
         if self.labelVolume == None:
             return None
@@ -754,8 +754,8 @@ class ndLibrary:
                 [loadSuccess, labelVolumeNode] = slicer.util.loadLabelVolume(self.labelVolume[0], {'show':False}, returnNode=True)
                 if not loadSuccess:
                     labelVolumeNode = None
-            #print(self.labelVolume[0])
-            #print(type(self.labelVolume))
+            #self.logger.warning(self.labelVolume[0])
+            #self.logger.warning(type(self.labelVolume))
             if labelVolumeNode is not None:
                 self.labelVolume = (self.labelVolume[0], labelVolumeNode)
                 labelVolumeNode.GetDisplayNode().SetSliceIntersectionThickness(1)
@@ -764,7 +764,7 @@ class ndLibrary:
                 if originTransform is not None:
                     labelVolumeNode.SetAndObserveTransformNodeID(originTransform.GetID())
             else:
-                print("Failed to load labelVolume")
+                self.logger.warning("Failed to load labelVolume")
                 return None
         return self.labelVolume[1]
     
@@ -772,13 +772,13 @@ class ndLibrary:
     ## From the region number of a label, get the row number for the table of label colors (Found in Colors module)
     ## Mostly used for InteractiveLabelSelector
     def getRowNum(self, roi_num):
-        print("there is no row data for ndlibrary!")
+        self.logger.warning("there is no row data for ndlibrary!")
     
     ## Should be unnecessary going forward, as we'll connect "colornum"(which appears to be roinum) direct on load
     ## From the row number of the table of label colors, find the associated region number of a label
     ## Mostly used for InteractiveLabelSelector
     def getRegionNum(self, row_num):
-        print("there is no row data for ndlibrary!")
+        self.logger.warning("there is no row data for ndlibrary!")
         return None
     
     ## Meant to tell whether or not ndLibrary object is initialized properly

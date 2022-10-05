@@ -1,4 +1,5 @@
 import os
+import logging
 from FiducialClickerMenu import FiducialClickerMenu
 from DataPackageMenu import DataPackageMenu
 from ndLibrary import ndLibrary
@@ -16,11 +17,12 @@ class manager:
     #logger = logging.getLogger('ndLibrarySupport')
     #logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)6d %(threadName)s %(message)s')
     def __init__(self,rootDir,categoryFilter=r'Species', prompt=True):
-        print("prompt is {}".format(prompt))
+        self.logger=logging.getLogger("ndLibrary")
+        self.logger.warning("prompt is {}".format(prompt))
 
         if not os.path.isdir(rootDir):
-            print("Please specify a valid path")
-            print(rootDir)
+            self.logger.warning("Please specify a valid path")
+            self.logger.warning(rootDir)
             return 1
         self.rootDir = rootDir
         self.categoryFilter = categoryFilter
@@ -52,7 +54,7 @@ class manager:
             toolbar.setVisible(0)
             if "Mouse" in toolbar.name:
                 self.mouseToolbar = toolbar
-                #print(toolbar.name)
+                #self.logger.warning(toolbar.name)
                 #action=toolbar.actions()[1]
                 for action in toolbar.actions():
                     if "Adjust" in action.name and "Window" in action.name:
@@ -78,6 +80,7 @@ class manager:
     def setup_library(self, rootDir):
         ## Create a tree of ndLibrary object where masterLib is the root
         self.library = ndLibrary(None, rootDir)
+        static_comparison_lib = None
         if "ComparisonMany" in self.library.conf:
             self.comparison=True
             # then we are in new use case
@@ -87,7 +90,6 @@ class manager:
                     break
         else:
             libs=self.library.getLibsByCategory(self.categoryFilter)
-            static_comparison_lib=None
         
         if "ComparisonOne" in self.library.conf:
             for child in self.library.children:
@@ -114,13 +116,14 @@ class manager:
             # TODO: the atlas controller resets the view every time I change specimen in the DataPackageMenu
                 # check if setUpLibrary has already been ran once and then don't run it again
                     # this did not work -- someone else is resetting the view? datapackagemenu?
-            assert static_comparison_lib is not None
+            if static_comparison_lib is None:
+                return "ERROR no static_comparison_lib found. set ComparisonOne in lib.conf"
             static_comparison_list_of_views = ["Red", "Green"]
             self.static_comparison_controller = AtlasController(static_comparison_list_of_views)
             if self.static_comparison_controller.library is None:
                 self.static_comparison_controller.setUpLibrary(static_comparison_lib)
         if len(libs) == 0 :
-            print("error, no libs matched {}".format(self.categoryFilter))
+            self.logger.warning("error, no libs matched {}".format(self.categoryFilter))
         if self.menu is None:
             mainWindow = slicer.util.mainWindow()
             menu_bar = mainWindow.findChild("QMenuBar", "menubar")
@@ -136,6 +139,8 @@ class manager:
     def set_data_package(self, lib_name):
         # find which library to load first
         # then call atlascontroller setup
+        if self.menu is None:
+            return None
         for child in self.dict_of_menu_lists[self.menu.title]:
             if child.conf["LibName"] == lib_name:
                 self.menu.controller.setUpLibrary(child)

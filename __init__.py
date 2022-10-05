@@ -27,7 +27,7 @@ def update_check(code_directory,remote_name='origin'):
     try:
         import git
     except ImportError:
-        print(" git unavailable, cannot check for updates of "+code_directory)
+        self.logger.warning(" git unavailable, cannot check for updates of "+code_directory)
         return None
     try:
         repo = git.Repo(code_directory)
@@ -50,7 +50,7 @@ def update_check(code_directory,remote_name='origin'):
     commits_ahead = repo.iter_commits(remote_name,local_name)
     acount = sum(1 for c in commits_ahead)
     if acount > 0:
-        print("Cool! you've made some changes! If you feel like they should be integrated, feel free to fork and issue a pull request!")
+        self.logger.warning("Cool! you've made some changes! If you feel like they should be integrated, feel free to fork and issue a pull request!")
     if bcount > 0:
         return repo
     return None
@@ -62,34 +62,34 @@ def code_update(repo):
 # TODO: this is the wrong way to setup the code library. learn how to
 """
 ## Find code and execute it
-print("ndLibrarySupport: setup code from "+code_directory)
+self.logger.warning("ndLibrarySupport: setup code from "+code_directory)
 code_file=''
 for code_file in os.listdir(code_directory):
     if '__init__' in code_file:
         continue
     if os.path.isdir(os.path.join(code_directory, code_file)) or not re.match(r''+r".*[.]py$", code_file):
         continue
-    #print("exec(open(r\""+os.path.join(code_directory, code_file)+"\").read())")
+    #self.logger.warning("exec(open(r\""+os.path.join(code_directory, code_file)+"\").read())")
     try:
         #import importlib.util
         #spec = importlib.util.spec_from_file_location("module.name", "/path/to/file.py")
         #spec = importlib.util.spec_from_file_location(file, os.path.join(code_directory, file))
         #foo = importlib.util.module_from_spec(spec)
         #spec.loader.exec_module(foo)
-        print(code_file)
+        self.logger.warning(code_file)
         if (sys.version_info > (3, 0)):
             exec(open(os.path.join(code_directory, code_file)).read())
         else:
             execfile(os.path.join(code_directory, code_file))
     except:
-        print("Code start error in file "+code_file+" from "+code_directory)
-print("ndLibrarySupport import complete")
+        self.logger.warning("Code start error in file "+code_file+" from "+code_directory)
+self.logger.warning("ndLibrarySupport import complete")
 if update_checking:
     try:
         update_available = update_check(code_directory)
         if update_available is not None:
             import git
-            print("Code could be updated, installing buttons")
+            self.logger.warning("Code could be updated, installing buttons")
             ## add a toolbar
             ## add a button with text "Update ndLibrarySupport"
     except:
