@@ -15,6 +15,33 @@ from InteractiveLabelSelector import InteractiveLabelSelector
 from AngleSlider import AngleSlider
 
 class AtlasController(): ## Rename?
+    ## Currently only instantiated in DataPackageMenu
+    # now also instantiates a 2nd instance in manager.py to control the atlas view (for comparison)
+    def __init__(self, view_names=None):
+        self.logger=logging.getLogger("ndLibrary")
+        self.setup_lib_counter = 0
+        self.library = None
+        self.view_names = view_names
+        ## Set up GUI elements
+        # TODO: currently, each slice view has its own volumeDropdown
+            # each volumeDropdown can have its own ndLibrary (the None argument here)
+            # when we instantiate the volumeDropdowns, we just need to attach the appropriate ndLibrary (specimen on left, atlas on right)
+        # extend atlascontroller to contain a list of drop downs
+        # self.drop_menus is a list of these
+        # get passed a list of dtrings for who to setup, based upon the VolumeDropdown id name (like Compare1 or Axial)
+            # names are set by viewNavigatorWith...
+            # view_names are the list to update thism with
+            # a list of who this controller is going to control
+        self.list_of_VolumeDropdowns = []
+        for view in view_names:
+            self.list_of_VolumeDropdowns.append(VolumeDropdown(None, view))
+
+        # not sure what to do with these
+        # ExternalLoadButton is only appropriate on some views!, should fix when it is instantiate.
+        #self.externalLoad = ExternalLoadButton("Load")
+        # 
+        self.labelSelector = InteractiveLabelSelector(None, None)
+        #self.angleSlider = AngleSlider("Navigator", "Compare1", "Compare2")
     def tractography_prompt(self):
         slicer.util.warningDisplay(
         # 68 chars first line which seems reasonable for message box.
@@ -145,33 +172,6 @@ class AtlasController(): ## Rename?
         
         ## 
 
-    ## Currently only instantiated in DataPackageMenu
-    # now also instantiates a 2nd instance in manager.py to control the atlas view (for comparison)
-    def __init__(self, view_names=None):
-        self.logger=logging.getLogger("ndLibrary")
-        self.setup_lib_counter = 0
-        self.library = None
-        self.view_names = view_names
-        ## Set up GUI elements
-        # TODO: currently, each slice view has its own volumeDropdown
-            # each volumeDropdown can have its own ndLibrary (the None argument here)
-            # when we instantiate the volumeDropdowns, we just need to attach the appropriate ndLibrary (specimen on left, atlas on right)
-        # extend atlascontroller to contain a list of drop downs
-        # self.drop_menus is a list of these
-        # get passed a list of dtrings for who to setup, based upon the VolumeDropdown id name (like Compare1 or Axial)
-            # names are set by viewNavigatorWith...
-            # view_names are the list to update thism with
-            # a list of who this controller is going to control
-        self.list_of_VolumeDropdowns = []
-        for view in view_names:
-            self.list_of_VolumeDropdowns.append(VolumeDropdown(None, view))
-
-        # not sure what to do with these
-        # ExternalLoadButton is only appropriate on some views!, should fix when it is instantiate.
-        #self.externalLoad = ExternalLoadButton("Load")
-        # 
-        self.labelSelector = InteractiveLabelSelector(None, None)
-        #self.angleSlider = AngleSlider("Navigator", "Compare1", "Compare2")
     def clear_views(self):
         for view in self.list_of_VolumeDropdowns:
             view.clear_view()
