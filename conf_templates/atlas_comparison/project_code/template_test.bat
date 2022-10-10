@@ -1,0 +1,1 @@
+start L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "L:\workstation\data\civm_data_review\project_code" --data_package "200826-1_6"
