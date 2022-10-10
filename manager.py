@@ -78,9 +78,11 @@ class manager:
         
         
     def setup_library(self, rootDir):
+        self.rootDir=rootDir
         ## Create a tree of ndLibrary object where masterLib is the root
         self.library = ndLibrary(None, rootDir)
         static_comparison_lib = None
+        libs = []
         if "ComparisonMany" in self.library.conf:
             self.comparison=True
             # then we are in new use case
@@ -96,7 +98,9 @@ class manager:
                 if child.conf["LibName"] == self.library.conf["ComparisonOne"]:
                     static_comparison_lib=child
                     break
-
+        if len(libs) == 0 :
+            # we should always have some libs!, do this check asap
+            self.logger.error("manager input problem. lib.conf in {}. no libs matched categoryfilter {}. maybe you should turn on RecursiveLoad".format(self.rootDir,self.categoryFilter))
         ## Create the menu of data packages to be used in the ndLibraryViewer
         ## DataPackageMenu will instantiate a controller object that will create the other GUI elements
         # Old method of filtering let the ndlibrary choose whom went into menu.
@@ -122,8 +126,7 @@ class manager:
             self.static_comparison_controller = AtlasController(static_comparison_list_of_views)
             if self.static_comparison_controller.library is None:
                 self.static_comparison_controller.setUpLibrary(static_comparison_lib)
-        if len(libs) == 0 :
-            self.logger.warning("error, no libs matched {}".format(self.categoryFilter))
+        
         if self.menu is None:
             mainWindow = slicer.util.mainWindow()
             menu_bar = mainWindow.findChild("QMenuBar", "menubar")

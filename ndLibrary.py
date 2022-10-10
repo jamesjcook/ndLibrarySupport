@@ -341,18 +341,20 @@ class ndLibrary:
         if self.match_field in self.conf:
             repPattern=" and "+self.conf[self.match_field]
         else:
-            repPattern = ""
+            #WARNING: this may break demo
+            repPattern="\1"
         try:
+            self.logger.debug("filter {} with {} ".format(self.file_loc,filter))
             libEntries = [f for f in os.listdir(os.getcwd()) if re.match(r''+filter, f) and not os.path.isdir(os.path.join(os.getcwd(),f))]
         except re.error:
-            self.logger.warning("loadVolumes bad regex " + filter +" for "+os.getcwd())
+            self.logger.warning("loadVolumes bad regex {} for {}".format(filter,self.file_loc))
             return
         if len(libEntries) == 0:
-            self.logger.warning("No volumes detected: "+os.getcwd()+" using "+filter+" from conf "+self.conf_path)
+            self.logger.warning("No volumes detected: {} using {} for {}".format(os.getcwd(),filter,self.conf_path))
             return
         self.volDict = dict()
         volExtPriority = dict()
-        self.logger.debug("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
+        self.logger.debug("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern)
         #self.logger.warning("Carving "+str(len(libEntries))+" vol names into meaning with "+pattern+repPattern);
         for i in range(0, len(libEntries)):
             libPath = os.path.join(os.getcwd(), libEntries[i])

@@ -9,11 +9,13 @@ import logging
 # always have workstation_data and wokrstation_home
 # if these below are here, we are fully setup
 # (RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME)
-os.environ['HOME']
 logger=logging.getLogger("ndLibrary")
+
+template = "conf_templates/atlas_comparison/project_code"
 
 # this needs to know about workstation_home etc
 #self.logger.warning(os.environ) # it is a dict
+
 
 def check_for_variables(env_variable_list):
     vars_found = 0
@@ -94,12 +96,12 @@ runno_var=tk.StringVar()
 # frm is short for frame
 frm = tk.Frame(root)
 frm.grid()
-tk.Label(frm, text="Project Code:", font = ('calibre',10,'bold')).grid(column=0, row=0)
-tk.Entry(frm, textvariable=project_code_var).grid(column=1, row=0)
-tk.Label(frm, text="Run Number:", font = ('calibre',10,'bold')).grid(column=0, row=1)
-tk.Entry(frm, textvariable=runno_var).grid(column=1, row=1)
+tk.Label(frm, text="Project Code:", font = ('calibre',14,'bold')).grid(column=0, row=0)
+tk.Entry(frm, textvariable=project_code_var, font = ('calibre',14,'bold')).grid(column=1, row=0)
+tk.Label(frm, text="Run Number:", font = ('calibre',14,'bold')).grid(column=0, row=1)
+tk.Entry(frm, textvariable=runno_var, font = ('calibre',14,'bold')).grid(column=1, row=1)
 
 tk.Button(frm, text="Quit", command=root.destroy).grid(column=2, row=1)
-tk.Button(frm, text="startup", command=startup).grid(column=2, row=0)
+tk.Button(frm, text="startup", command=startup, font = ('calibre',30,'bold')).grid(column=1, row=3)
 
 root.mainloop()
