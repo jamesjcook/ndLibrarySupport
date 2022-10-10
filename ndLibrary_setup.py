@@ -6,102 +6,104 @@
 import tkinter as tk
 import os
 import logging
-# always have workstation_data and wokrstation_home
-# if these below are here, we are fully setup
-# (RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME)
-logger=logging.getLogger("ndLibrary")
+class ndLibrary_setup():
+    def __init__(self):
+        print(3)
+        root = tk.Tk()
+        # setting the windows size
+        root.geometry("600x400")
 
-template = "conf_templates/atlas_comparison/project_code"
+        # declaring string variable
+        self.project_code_var=tk.StringVar()
+        self.runno_var=tk.StringVar()
+        # frm is short for frame
+        frm = tk.Frame(root)
+        frm.grid()
+        tk.Label(frm, text="Project Code:", font = ('calibre',14,'bold')).grid(column=0, row=0)
+        tk.Entry(frm, textvariable=self.project_code_var, font = ('calibre',14,'bold')).grid(column=1, row=0)
+        tk.Label(frm, text="Run Number:", font = ('calibre',14,'bold')).grid(column=0, row=1)
+        tk.Entry(frm, textvariable=self.runno_var, font = ('calibre',14,'bold')).grid(column=1, row=1)
 
-# this needs to know about workstation_home etc
-#self.logger.warning(os.environ) # it is a dict
+        tk.Button(frm, text="Quit", command=root.destroy).grid(column=2, row=1)
+        tk.Button(frm, text="startup", command=self.startup, font = ('calibre',30,'bold')).grid(column=1, row=3)
 
+        root.mainloop()
 
-def check_for_variables(env_variable_list):
-    vars_found = 0
-    for var in env_variable_list:
-        if os.environ[var] is not None and os.environ[var] is not "":
-            vars_found += 1
-    if vars_found < len(env_variable_list):
-        return False
-    return True
+    # always have workstation_data and wokrstation_home
+    # if these below are here, we are fully setup
+    # (RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME)
+    logger=logging.getLogger("ndLibrary")
 
-def environment_setup():
-    """checks for required environment varibales. if not found, run the workstation_setup code
-    Returns True if environment is already setup or setup is sucessful
-    returns false if setup failed"""
-    env_variable_list = "RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME".split(" ")
-    if check_for_variables(env_variable_list):
+    template = "conf_templates/atlas_comparison/project_code"
+
+    # this needs to know about workstation_home etc
+    #self.logger.warning(os.environ) # it is a dict
+
+    def check_for_variables(self, env_variable_list):
+        vars_found = 0
+        for var in env_variable_list:
+            if os.environ[var] is not None and os.environ[var] != "":
+                vars_found += 1
+        if vars_found < len(env_variable_list):
+            return False
         return True
-    else: 
-        # TODO: this will ask user to input biggus_diskus
-        # makle sure really the right workstaiton_home(reoranization--home or code?)
-        cmd = r"bash -c \"cd $WORKSTATION__HOME; ./install.pl --only=shell\""
-        os.system(cmd)
-    
-    # after setup has run, check again to make sure it ran sucessfully
-    if check_for_variables(env_variable_list):
-        return True
-    else: 
-        return False
 
-def find_data_in_archive():
-    # we know where windows helpoer scripts are to connect to archive as A
-    # want connectome results
-    # test for A:/ path, if it is not found, then run mounta script
-    # os.system(connect.bat)
+    def environment_setup(self):
+        """checks for required environment varibales. if not found, run the workstation_setup code
+        Returns True if environment is already setup or setup is sucessful
+        returns false if setup failed"""
+        env_variable_list = "RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME".split(" ")
+        if self.check_for_variables(env_variable_list):
+            return True
+        else: 
+            # TODO: this will ask user to input biggus_diskus
+            # makle sure really the right workstaiton_home(reoranization--home or code?)
+            cmd = r"bash -c \"cd $WORKSTATION__HOME; ./install.pl --only=shell\""
+            os.system(cmd)
+        
+        # after setup has run, check again to make sure it ran sucessfully
+        if check_for_variables(env_variable_list):
+            return True
+        else: 
+            return False
 
-    # find runno of interest
-    # .? means an optional single character
-    #A:/project_code/research/connectome.?${runno}.?dsi_studio*
-    # also need dwi and b0avg from the diffusion folder 
+    def find_data_in_archive(self):
+        # we know where windows helpoer scripts are to connect to archive as A
+        # want connectome results
+        # test for A:/ path, if it is not found, then run mounta script
+        # os.system(connect.bat)
 
-    # ccheck for connectome*/nhdr
-    # and diffusion*/nhdr
-    # if its missing, do (tbd) tricks
-    # (we're not sure lndir is a good idea)link these to a phony dir in home, thern we can run diffusion_generate_nhdr
-    # lndir # this is now put in $WKS_BIN
-    # if environment_setup() passes, then lndir will work
-    # lndir does not make the main directory (we think) but does for children
-    # HOLD ON, we want nhdrs IN our connectome/diffusion folders in the archive! We dont want users re-generating them all the time!
-    # diffusion_generate_nhdr input=A:/project_code/... output=~/divm_data_review/proejct_code/...
+        # find runno of interest
+        # .? means an optional single character
+        #A:/project_code/research/connectome.?${runno}.?dsi_studio*
+        # also need dwi and b0avg from the diffusion folder 
 
-    # nhdr folder exists, and is ready.
-    # replicate template conf to our libdir
-    # create data setup in users home documenbts
-    # "C:\Users\hmm56\Documents\civm_data_review\19.gaj.43
-    # make civm_data_review if missing, project code and other folders also
-    
-    pass
+        # ccheck for connectome*/nhdr
+        # and diffusion*/nhdr
+        # if its missing, do (tbd) tricks
+        # (we're not sure lndir is a good idea)link these to a phony dir in home, thern we can run diffusion_generate_nhdr
+        # lndir # this is now put in $WKS_BIN
+        # if environment_setup() passes, then lndir will work
+        # lndir does not make the main directory (we think) but does for children
+        # HOLD ON, we want nhdrs IN our connectome/diffusion folders in the archive! We dont want users re-generating them all the time!
+        # diffusion_generate_nhdr input=A:/project_code/... output=~/divm_data_review/proejct_code/...
 
-# this needs to be before the Button(command = startup) line because otherwise it cannot find the function it wants to run
-def startup():
-    project_code = project_code_var.get()
-    runno = runno_var.get()
+        # nhdr folder exists, and is ready.
+        # replicate template conf to our libdir
+        # create data setup in users home documenbts
+        # "C:\Users\hmm56\Documents\civm_data_review\19.gaj.43
+        # make civm_data_review if missing, project code and other folders also
+        
+        pass
 
-    logger.warning("project code: {}\nrunno: {}".format(project_code, runno))
+    # this needs to be before the Button(command = startup) line because otherwise it cannot find the function it wants to run
+    def startup(self):
+        project_code = self.project_code_var.get()
+        runno = self.runno_var.get()
 
-    os.system(r"C:\Users\hmm56\Documents\civm_data_review\19.gaj.43\start_1_BXD45.bat")
+        self.logger.warning("project code: {}\nrunno: {}".format(project_code, runno))
 
-root = tk.Tk()
-# setting the windows size
-root.geometry("600x400")
+        os.system(r"C:\Users\hmm56\Documents\civm_data_review\19.gaj.43\start_1_BXD45.bat")
+    print(2)
 
-# declaring string variable
-project_code_var=tk.StringVar()
-runno_var=tk.StringVar()
-
-
-
-# frm is short for frame
-frm = tk.Frame(root)
-frm.grid()
-tk.Label(frm, text="Project Code:", font = ('calibre',14,'bold')).grid(column=0, row=0)
-tk.Entry(frm, textvariable=project_code_var, font = ('calibre',14,'bold')).grid(column=1, row=0)
-tk.Label(frm, text="Run Number:", font = ('calibre',14,'bold')).grid(column=0, row=1)
-tk.Entry(frm, textvariable=runno_var, font = ('calibre',14,'bold')).grid(column=1, row=1)
-
-tk.Button(frm, text="Quit", command=root.destroy).grid(column=2, row=1)
-tk.Button(frm, text="startup", command=startup, font = ('calibre',30,'bold')).grid(column=1, row=3)
-
-root.mainloop()
+setupper = ndLibrary_setup()
