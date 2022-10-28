@@ -423,7 +423,7 @@ class ndLibrary:
             self.logger.warning("Labels are already loaded")
             return
         labelPat = r".*[._-]labels[._-].*"
-        lookupPat = ".*_lookup[.](?:txt|ctbl)$"
+        lookupPat = ".*_labels_lookup[.](?:txt|ctbl)$"
         if self.filter_field in self.conf:
             filter = self.conf[self.filter_field]
         else:
