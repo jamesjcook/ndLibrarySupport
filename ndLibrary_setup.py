@@ -6,6 +6,7 @@
 from email.policy import default
 import tkinter as tk
 import os
+import subprocess
 import logging
 import shutil
 import re
@@ -39,9 +40,9 @@ class ndLibrary_setup():
         #od["trail"]=tk.StringVar()# -results?
         # set default values
         # save previous values in a local file, use these as defaults next time
-        od["base_dir"].set("L:/ProjectSpace/kjh60")
-        od["project_code"].set("kempermann_review")
-        od["p_sub"].set("")
+        od["base_dir"].set("A:/")
+        od["project_code"].set("20.5xfad.01")
+        od["p_sub"].set("research")
         od["data_pattern"].set("connectomeRUNNOdsi_studio/nhdr")
         #od["data_suffix"].set("")
         #od["trail"].set("")# -results?"""
@@ -62,7 +63,7 @@ class ndLibrary_setup():
         # declaring string variable
         self.project_code_var=tk.StringVar()
         self.runno_var=tk.StringVar()
-        self.runno_var.set("S69310NLSAM")
+        self.runno_var.set("N58840NLSAM")
         # frm is short for frame
         frm=root
 
@@ -195,12 +196,7 @@ class ndLibrary_setup():
         else: 
             return False
 
-    def find_data(self, basedir="A:"):
-        data_dir = basedir
-        # we know where windows helpoer scripts are to connect to archive as A
-        # want connectome results
-        # test for A:/ path, if it is not found, then run mounta script
-        # os.system(connect.bat)
+    def archive_connect(self,basedir="A:"):
         if not os.path.exists(basedir) and re.match("^A:.*", basedir):
             # then mount A
             var="WORKSTATION_HOME"
@@ -214,11 +210,23 @@ class ndLibrary_setup():
                 # probably safe =because other OS do not have drives
                 archive_connector = os.path.join(drive,"/", "civm_apps", "network_shares", "connect_A_civm_archive.bat")
                 self.logger.warning(archive_connector)
-                os.system(archive_connector)
+                os.system("{} 0 ".format(archive_connector))
+            else:
+                msg="Couln't auto connect archive for you"
+                print(msg)
+                self.logger.warning(msg)
         if not os.path.exists(basedir):
             self.logger.warning("ERROR: unable to mount the archive.")
             #exit()
+    
 
+    def find_data(self, basedir="A:"):
+        data_dir = basedir
+        # we know where windows helpoer scripts are to connect to archive as A
+        # want connectome results
+        # test for A:/ path, if it is not found, then run mounta script
+        # os.system(connect.bat)
+        self.archive_connect(basedir)
         # find runno of interest
         # .? means an optional single character
         #A:/project_code/research/connectome.?${runno}.?dsi_studio*
@@ -276,9 +284,11 @@ class ndLibrary_setup():
 
         self.update_path_display()
         self.data_dir = self.data_dir.replace("RUNNO", self.runno)
-
+        
         self.logger.warning(self.data_dir)
 
+        self.archive_connect(self.data_dir)
+        
         # replicate conf templates within lib conf dir
         self.project_conf_dir = os.path.join(os.environ["USERPROFILE"], "civm_data_review", self.data_organization["project_code"].get())
         # check for these guys
@@ -296,7 +306,7 @@ class ndLibrary_setup():
             for f in files:
                 shutil.rmtree(os.path.join(specimen_selections_dir,f))
 
-        if not os.path.exists(self.runno_conf_dir):
+        if not os.path.exists(self.runno_conf_dir) and os.path.exists(self.data_dir):
             shutil.copytree(os.path.join(specimen_selections_dir,"template"),self.runno_conf_dir)
             transform_files = find("*.mat", os.path.join(self.data_dir, "transforms"))
             with open(os.path.join(self.runno_conf_dir, "lib.conf"), "a") as f:
@@ -310,7 +320,8 @@ class ndLibrary_setup():
         cmd = r'L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
         #cmd = r'L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
         #cmd = r'L:\CIVM_Apps\Slicer\5.0.3\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
-        os.system(cmd)
+        #os.system(cmd)
+        s_output=subprocess.Popen(cmd);
         # this will be the last call to make
         #os.system(r"C:\Users\hmm56\Documents\civm_data_review\19.gaj.43\start_1_BXD45.bat")
     print(2)

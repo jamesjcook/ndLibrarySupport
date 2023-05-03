@@ -1,0 +1,1 @@
+call L:\DevApps\Python\Python39\python L:\workstation\code\display\ndLibrarySupport\ndlibrary_setup.py
