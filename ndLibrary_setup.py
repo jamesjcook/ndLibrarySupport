@@ -1,6 +1,6 @@
 # should be a simple gui with a text box for input and an OK button
 # text box should take in a string containing project_code and runno, separated by any delimiter
-# then, should just simply run our batch script 
+# then, should just simply run our batch script
 #from tkinter import *
 #from tkinter import ttk
 from email.policy import default
@@ -25,10 +25,25 @@ class ndLibrary_setup():
         root = tk.Tk()
         self.root=root
         self.logger=logging.getLogger("ndLibrary")
-        self.template = "conf_templates/atlas_comparison/project_code"
+        self.script_dir="{}/code/display/ndLibrarySupport".format(os.environ["WORKSTATION_HOME"])
+        self.template = "{}/conf_templates/atlas_comparison/project_code".format(self.script_dir).replace(r'\\','/').replace('//','/')
+        self.slicer_exe_path = None
         self.data_dir = None # or empty string?
         self.checkboxes = None
         self.display_path_button = None
+
+        sys_drives = [ r'L:\\', r'K:\\', r'D:\\', r'C:\\' ]
+        base_path = None
+        for sd in sys_drives:
+          sd=os.path.join(sd,r'CIVM_Apps')
+          if os.path.exists(sd):
+            base_path = sd
+          #else:
+          #  print("no {}".format(sd))
+        self.slicer_exe_path=r'{}\Slicer\4.11.20200930\Slicer.exe'.format(base_path)
+        if not os.path.exists(self.slicer_exe_path):
+          print('Bad slicer path {}'.format(self.slicer_exe_path))
+          return
 
         self.data_organization = None
         od=OrderedDict()
@@ -81,7 +96,7 @@ class ndLibrary_setup():
         c=0; r+=1
         runno_label.grid(column=c,row=r);  c+=1;  runno_entry.grid(column=c,row=r)
         c=0; r+=1
-        start_button.grid(column=c,row=r);  c+=1;  
+        start_button.grid(column=c,row=r);  c+=1;
         c=0; r+=1
         quit_button.grid(column=c,row=r);  c+=1;  adv_button.grid(column=c,row=r)
         print("{} {} ".format(c, r))
@@ -92,7 +107,7 @@ class ndLibrary_setup():
         self.display_path_button = None
         #self.checkboxes = None
         self.adv_panel = None
-    
+
     def show_adv_panel(self):
         # only allow for one advanced menu panel to show
         if self.adv_panel is not None:
@@ -101,7 +116,7 @@ class ndLibrary_setup():
         # Toplevel object which will be treated as a new window
         adv_panel = tk.Toplevel(self.root); adv_panel.grid()
         # sets the title of the Toplevel widget
-        adv_panel.title("data organization")  
+        adv_panel.title("data organization")
         c=0; r=0
         # checkboxes determine whether or not that field goes in to the data path or not
         #checkboxes[key] is NOT a checkbox itself, it holds the boolean value of the checkbox
@@ -129,13 +144,13 @@ class ndLibrary_setup():
         tk.Button(adv_panel, text="Update Path", command=self.update_path_display).grid(column=c, row=r+1)
 
         # need to be configuratble patternizaingatairoetoieanognan for ou r connectome folders
-        #base dir 
+        #base dir
         #layers of stuff...
         # array ?
         #data_dir = "{}/{}/research/connectome{}dsi_studio/nhdr".format(data_dir, self.project_code, self.runno)
 
 
-                
+
         self.adv_panel = adv_panel
 
     def update_path_display(self):
@@ -183,17 +198,17 @@ class ndLibrary_setup():
         env_variable_list = "RADISH_PERL_LIB BIGGUS_DISKUS WORKSTATION_DATA WORKSTATION_HOME".split(" ")
         if self.check_for_variables(env_variable_list):
             return True
-        else: 
+        else:
             # TODO: this will ask user to input biggus_diskus
             # makle sure really the right workstaiton_home(reoranization--home or code?)
             # -l is login mode
             cmd = r"bash -l -c \'cd $WORKSTATION_HOME; ./install.pl --only=shell\'"
             os.system(cmd)
-        
+
         # after setup has run, check again to make sure it ran sucessfully
         if self.check_for_variables(env_variable_list):
             return True
-        else: 
+        else:
             return False
 
     def archive_connect(self,basedir="A:"):
@@ -218,7 +233,7 @@ class ndLibrary_setup():
         if not os.path.exists(basedir):
             self.logger.warning("ERROR: unable to mount the archive.")
             #exit()
-    
+
 
     def find_data(self, basedir="A:"):
         data_dir = basedir
@@ -230,7 +245,7 @@ class ndLibrary_setup():
         # find runno of interest
         # .? means an optional single character
         #A:/project_code/research/connectome.?${runno}.?dsi_studio*
-        # also need dwi and b0avg from the diffusion folder 
+        # also need dwi and b0avg from the diffusion folder
 
         # ccheck for connectome*/nhdr
         # and diffusion*/nhdr
@@ -256,20 +271,18 @@ class ndLibrary_setup():
         if os.path.exists(data_dir):
             os.listdir(data_dir)
             return(data_dir)
-        else: 
+        else:
             return None
-        
+
         pass
 
     # this needs to be before the Button(command = startup) line because otherwise it cannot find the function it wants to run
     def startup(self):
         self.runno = self.runno_var.get()
-
         if self.environment_setup():
             self.logger.warning("SETUP PASSED")
-        else: 
+        else:
             self.logger.warning("SETUP FAILURE")
-
         """# if self.data_organization is not None, then use it's path instead, else run find_data
         # nono, checking if self.data_dir is not None is sufficient
         if self.data_dir is None:
@@ -281,14 +294,10 @@ class ndLibrary_setup():
         else:
             self.logger.info("Using path defined in advanced configuration menu...:\n\t{}".format(self.data_dir))
             print(self.data_dir)"""
-
         self.update_path_display()
         self.data_dir = self.data_dir.replace("RUNNO", self.runno)
-        
         self.logger.warning(self.data_dir)
-
         self.archive_connect(self.data_dir)
-        
         # replicate conf templates within lib conf dir
         self.project_conf_dir = os.path.join(os.environ["USERPROFILE"], "civm_data_review", self.data_organization["project_code"].get())
         # check for these guys
@@ -305,19 +314,24 @@ class ndLibrary_setup():
             files = [f for f in os.listdir(specimen_selections_dir) if not re.match(r'template|lib\.conf|\.\.?', f)]
             for f in files:
                 shutil.rmtree(os.path.join(specimen_selections_dir,f))
-
-        if not os.path.exists(self.runno_conf_dir) and os.path.exists(self.data_dir):
-            shutil.copytree(os.path.join(specimen_selections_dir,"template"),self.runno_conf_dir)
+        specimen_template=os.path.join(specimen_selections_dir,"template")
+        if not os.path.exists(self.runno_conf_dir) and os.path.exists(self.data_dir) and os.path.exists(specimen_template):
+            shutil.copytree(specimen_template,self.runno_conf_dir)
             transform_files = find("*.mat", os.path.join(self.data_dir, "transforms"))
             with open(os.path.join(self.runno_conf_dir, "lib.conf"), "a") as f:
                 f.write("Path={}\n".format(self.data_dir))
                 if transform_files is not None:
-                    f.write("OriginTransform={}\n".format(transform_files[0]))
+                    f.write("OriginTransform={}\n".format(transform_files[0].replace("\\","/")))
+        else:
+          if not os.path.exists(specimen_template):
+            print("Error finding spec template {}".format(specimen_template))
+          if not os.path.exists(self.data_dir):
+            print("Error no data dir {}".format(self.data_dir))
 
         # TODO: update atlas lib conf, must use correct voxel size
 
         # build the lib starter
-        cmd = r'L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
+        cmd = r'{} --python-script "{}/ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.slicer_exe_path, self.script_dir, self.project_conf_dir, self.runno)
         #cmd = r'L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
         #cmd = r'L:\CIVM_Apps\Slicer\5.0.3\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)
         #os.system(cmd)
