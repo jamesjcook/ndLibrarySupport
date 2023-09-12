@@ -11,6 +11,9 @@ import logging
 import shutil
 import re
 from collections import OrderedDict
+
+from conf import conf
+
 import fnmatch
 def find(pattern, path):
     result = []
@@ -25,7 +28,13 @@ class ndLibrary_setup():
         root = tk.Tk()
         self.root=root
         self.logger=logging.getLogger("ndLibrary")
+        print("WORKSTATION_HOME={}".format(os.environ["WORKSTATION_HOME"]))
+        try:
+          print("WORKSTATION_CAHCE={}".format(os.environ["WORKSTATION_CACHE"]))
+        except Exception as e:
+          print("WORKSTATION_CACHE NOT SET")
         self.script_dir="{}/code/display/ndLibrarySupport".format(os.environ["WORKSTATION_HOME"])
+        self.user_dir=os.path.join(os.environ["USERPROFILE"], "civm_data_review")
         self.template = "{}/conf_templates/atlas_comparison/project_code".format(self.script_dir).replace(r'\\','/').replace('//','/')
         self.slicer_exe_path = None
         self.data_dir = None # or empty string?
@@ -62,7 +71,6 @@ class ndLibrary_setup():
         #od["data_suffix"].set("")
         #od["trail"].set("")# -results?"""
         self.data_organization=od
-
         self.adv_panel = None
         # setting the windows size
         root.geometry("600x400")
@@ -74,11 +82,17 @@ class ndLibrary_setup():
             w = tk.Label(root, text="Blue Sky", bg="blue", fg="white")
             w.pack()
 
-
         # declaring string variable
         self.project_code_var=tk.StringVar()
         self.runno_var=tk.StringVar()
         self.runno_var.set("N58840NLSAM")
+        # load a lib-conf and update values from default if populated.
+        self.conf=conf(self.user_dir,conf_name="review.conf")
+        for entry in self.data_organization.keys():
+          if entry in self.conf:
+            self.data_organization[entry].set(self.conf[entry])
+        if "runno" in self.conf:
+          self.runno_var.set(self.conf["runno"])
         # frm is short for frame
         frm=root
 
@@ -107,6 +121,7 @@ class ndLibrary_setup():
         self.display_path_button = None
         #self.checkboxes = None
         self.adv_panel = None
+
 
     def show_adv_panel(self):
         # only allow for one advanced menu panel to show
@@ -137,10 +152,13 @@ class ndLibrary_setup():
         self.display_path_button = tk.Button(adv_panel, text=self.data_dir, command=self.cleanup_adv_panel)
         self.display_path_button.grid(column=c, row=r)
         self.checkboxes = checkboxes
+        if "used_path_elements" in self.conf:
+          used_l=self.conf["used_path_elements"].split("|")
+          for entry in self.checkboxes.keys():
+            if not entry in used_l:
+              self.checkboxes[entry].set(False)
 
         self.update_path_display()
-
-
         tk.Button(adv_panel, text="Update Path", command=self.update_path_display).grid(column=c, row=r+1)
 
         # need to be configuratble patternizaingatairoetoieanognan for ou r connectome folders
@@ -149,18 +167,19 @@ class ndLibrary_setup():
         # array ?
         #data_dir = "{}/{}/research/connectome{}dsi_studio/nhdr".format(data_dir, self.project_code, self.runno)
 
-
-
         self.adv_panel = adv_panel
 
     def update_path_display(self):
         from tkinter import messagebox
         # should update self.display_path
-        l = []
+        used_v = []
+        used_k = []
         for key in self.data_organization.keys():
             if self.checkboxes is None or self.checkboxes[key].get():
-                l.append(self.data_organization[key].get())
-        self.data_dir = os.path.join(*l)
+                used_v.append(self.data_organization[key].get())
+                used_k.append(key)
+        self.conf["used_path_elements"]="|".join(used_k);
+        self.data_dir = os.path.join(*used_v)
         if self.display_path_button is not None:
             self.display_path_button.config(text=self.data_dir)
         if "RUNNO" not in self.data_organization["data_pattern"].get():
@@ -241,7 +260,7 @@ class ndLibrary_setup():
         # want connectome results
         # test for A:/ path, if it is not found, then run mounta script
         # os.system(connect.bat)
-        self.archive_connect(basedir)
+        #######self.archive_connect(basedir)
         # find runno of interest
         # .? means an optional single character
         #A:/project_code/research/connectome.?${runno}.?dsi_studio*
@@ -279,10 +298,11 @@ class ndLibrary_setup():
     # this needs to be before the Button(command = startup) line because otherwise it cannot find the function it wants to run
     def startup(self):
         self.runno = self.runno_var.get()
+        self.conf["runno"]=self.runno;
         if self.environment_setup():
-            self.logger.warning("SETUP PASSED")
+            self.logger.warning("ENV PASSED")
         else:
-            self.logger.warning("SETUP FAILURE")
+            self.logger.warning("ENV FAILURE")
         """# if self.data_organization is not None, then use it's path instead, else run find_data
         # nono, checking if self.data_dir is not None is sufficient
         if self.data_dir is None:
@@ -297,9 +317,12 @@ class ndLibrary_setup():
         self.update_path_display()
         self.data_dir = self.data_dir.replace("RUNNO", self.runno)
         self.logger.warning(self.data_dir)
+        for entry in self.data_organization.keys():
+          self.conf[entry]=self.data_organization[entry].get()
+        self.conf.save(overwrite=True)
         self.archive_connect(self.data_dir)
         # replicate conf templates within lib conf dir
-        self.project_conf_dir = os.path.join(os.environ["USERPROFILE"], "civm_data_review", self.data_organization["project_code"].get())
+        self.project_conf_dir = os.path.join(self.user_dir, self.data_organization["project_code"].get())
         # check for these guys
         specimen_selections_dir = os.path.join(self.project_conf_dir, "specimen_selections")
         self.runno_conf_dir = os.path.join(specimen_selections_dir, self.runno)
@@ -327,9 +350,8 @@ class ndLibrary_setup():
             print("Error finding spec template {}".format(specimen_template))
           if not os.path.exists(self.data_dir):
             print("Error no data dir {}".format(self.data_dir))
-
+            return
         # TODO: update atlas lib conf, must use correct voxel size
-
         # build the lib starter
         cmd = r'{} --python-script "{}/ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.slicer_exe_path, self.script_dir, self.project_conf_dir, self.runno)
         #cmd = r'L:\CIVM_Apps\Slicer\4.11.20200930\Slicer.exe --python-script "L:\workstation\code\display\ndLibrarySupport\ndLibrarySupportMain.py" -l "{}" --data_package "{}"'.format(self.project_conf_dir, self.runno)

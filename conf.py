@@ -7,15 +7,18 @@ import sys
 import os
 import re
 import logging
+import collections
 
 class conf(dict):
+    #class conf(collections.OrderedDict):
     def __init__(self,conf_path,conf_name="lib.conf", existing_conf = None):
+        super(conf, self).__init__()
+        #super(conf, self).__init__()
         self.logger=logging.getLogger("ndLibrary")
         if existing_conf is not None:
             for f in existing_conf:
                     self[f]=existing_conf[f]
         #    self=existing_conf.copy()
-        #super(dict, self).__init__()
         # comments will be line num : comment
         self.comments=dict()
         # lines will be line num : field key
@@ -35,14 +38,14 @@ class conf(dict):
             self.load(self.conf_path)#, existing_conf)
         else:
             self.logger.warning("New empty conf for "+self.conf_path)
-            
+
     ## generate a new config file from a template if does not exist
-    ## template is the path to template config file 
+    ## template is the path to template config file
     def generate(self, template):
         self.logger.warning('    GENERATING NEW CONF FILE FOR: ' + template)
         self.load(template)
         self.save()
-        
+
     ## Method to load a lib.conf file for a ndLibrary and store the name-value pairs it contains
     def load(self, file=None):#, existing_conf = None):
         if file is None:
@@ -78,7 +81,7 @@ class conf(dict):
         #    for f in existing_conf:
         #        if f not in self:
         #            self[f]=existing_conf
-        # clean up routine typeo, except its so pervasive... 
+        # clean up routine typeo, except its so pervasive...
         #if self.pattern_field not in self and "FileAbrevPattern" in self:
         #    self.pattern_field = "FileAbrevPattern"
         #    self[self.pattern_field]=
@@ -89,17 +92,17 @@ class conf(dict):
         for e in self:
             self.logger.warning(indent+"\t"+e+"\t= "+self[e])
     ## save conf
-    def save(self,out_path=None):
+    def save(self,out_path=None,overwrite=False):
         if out_path is None:
             out_path = self.conf_dir
         if out_path and os.path.isdir(out_path):
             #self.logger.warning("Given dir, add name")
-            out_path=os.path.join(out_path,"lib.conf")
+            out_path=os.path.join(out_path,self.conf_name)
         else:
             self.logger.warning("Write disabled, switch to print" + "missing out path " + out_path)
             out_path = None
         #if out_path is None or os.path.isfile(out_path):
-        if out_path and os.path.isfile(out_path):
+        if out_path and os.path.isfile(out_path) and not overwrite:
             self.logger.warning('Conf overwrite disabled for now');
             #out_path=self.conf_path
             return
